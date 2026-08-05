@@ -1,0 +1,27 @@
+repository_type: pipeline
+
+nf_core_version: 4.1.0
+
+lint:
+  nextflow_config: false
+  files_exist:
+    - nextflow_schema.json
+    - conf/igenomes.config
+    - conf/igenomes_ignored.config
+  schema_lint: false
+  schema_params: false
+  schema_description: false
+
+template:
+  org: nf-core
+  name: opensearch
+  description: search for possible peptides and modifications in mass-spec data
+  author: animesh
+  version: 1.0.0dev
+  force: true
+  outdir: .
+  skip_features:
+    - igenomes
+    - fastqc
+    - nf_schema
+  is_nfcore: true
