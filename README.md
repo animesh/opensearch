@@ -21,49 +21,173 @@
 
 ## Introduction
 
-**nf-core/opensearch** is a bioinformatics pipeline that ...
+**nf-core/opensearch** is a Nextflow pipeline for proteomics open-search analysis of Orbitrap raw files and timsTOF `.d` directories.
 
-<!-- TODO nf-core:
-   Complete this sentence with a 2-3 sentence summary of what types of data the pipeline ingests, a brief overview of the
-   major pipeline sections and the types of output it produces. You're giving an overview to someone new
-   to nf-core here, in 15-20 seconds. For an example, see https://github.com/nf-core/rnaseq/blob/master/README.md#introduction
--->
+The workflow runs FragPipe first, then optionally runs Casanovo (de novo sequencing) and AA_stat (modification profiling) from FragPipe outputs. Inputs can be provided using a samplesheet (`ID`, `raw-file-name`) or by scanning an input directory using filename patterns.
 
-<!-- TODO nf-core: Include a figure that guides the user through the major workflow steps. Many nf-core
-     workflows use the "tube map" design for that. See https://nf-co.re/docs/community/brand/workflow-schematics#examples for examples.   -->
-<!-- TODO nf-core: Fill in short bullet-pointed list of the default steps in the pipeline -->2. Present QC for raw reads ([`MultiQC`](http://multiqc.info/))
+Default workflow steps:
+
+1. Discover raw inputs from a samplesheet or directory pattern(s)
+2. Run FragPipe in headless mode using the provided workflow and manifest templates
+3. Run Casanovo from generated calibrated `mzML` files (optional)
+4. Run AA_stat from generated calibrated `mzML` and `pepXML` files (optional)
+5. Produce standard nf-core pipeline metadata and reports
 
 ## Usage
 
 > [!NOTE]
 > If you are new to Nextflow and nf-core, please refer to [this page](https://nf-co.re/docs/get_started/environment_setup/overview) on how to set-up Nextflow. Make sure to [test your setup](https://nf-co.re/docs/get_started/run-your-first-pipeline) with `-profile test` before running the workflow on actual data.
 
-<!-- TODO nf-core: Describe the minimum required steps to execute the pipeline, e.g. how to prepare samplesheets.
-     Explain what rows and columns represent. For instance (please edit as appropriate):
+Prepare one of the two supported input modes.
 
-First, prepare a samplesheet with your input data that looks as follows:
-
-`samplesheet.csv`:
+1. Samplesheet mode (`--input`):
 
 ```csv
-sample,fastq_1,fastq_2
-CONTROL_REP1,AEG588A1_S1_L002_R1_001.fastq.gz,AEG588A1_S1_L002_R2_001.fastq.gz
+ID,raw-file-name
+sample_01,/data/orbitrap/sample_01.raw
+sample_02,/data/timstof/sample_02.d
 ```
 
-Each row represents a fastq file (single-end) or a pair of fastq files (paired end).
+2. Directory mode (`--input_dir`):
 
--->
+- Point to a parent directory containing raw files/directories.
+- Optionally set `--raw_pattern` (comma-separated globs), e.g. `*.raw` or `*.d`.
+- The default pattern is `*.d,*.raw,*.RAW,*.mzML,*.mzml`.
 
 Now, you can run the pipeline using:
-
-<!-- TODO nf-core: update the following command to include all required parameters for a minimal example -->
 
 ```bash
 nextflow run nf-core/opensearch \
    -profile <docker/singularity/.../institute> \
-   --input samplesheet.csv \
+  --input samplesheet.csv \
+  --scripts_dir <DIR_WITH_fp.manifest.txt_AND_fp.dl.workflow.txt> \
+  --outdir <OUTDIR>
+```
+
+Directory mode:
+
+```bash
+nextflow run nf-core/opensearch \
+  -profile <docker/singularity/.../institute> \
+  --input_dir /path/to/raw_inputs \
+  --raw_pattern '*.raw,*.d' \
+  --scripts_dir <DIR_WITH_fp.manifest.txt_AND_fp.dl.workflow.txt> \
    --outdir <OUTDIR>
 ```
+
+Orbitrap example:
+
+```bash
+nextflow run nf-core/opensearch \
+  --input_dir /path/to/orbitrap_raws \
+  --raw_pattern '*.raw' \
+  --scripts_dir /path/to/scripts \
+  --outdir results
+```
+
+timsTOF example:
+
+```bash
+nextflow run nf-core/opensearch \
+  --input_dir /path/to/timstof_runs \
+  --raw_pattern '*.d' \
+  --scripts_dir /path/to/scripts \
+  --outdir results
+```
+
+If you prefer explicit file paths instead of `--scripts_dir`, use:
+
+- `--fragpipe_manifest /path/to/fp.manifest.txt`
+- `--fragpipe_workflow /path/to/fp.dl.workflow.txt`
+
+### Important parameters
+
+- `--scripts_dir`: recommended way to provide FragPipe templates. Must contain `fp.manifest.txt` and `fp.dl.workflow.txt`.
+- `--fragpipe_manifest` and `--fragpipe_workflow`: explicit alternative to `--scripts_dir`.
+- `--fragpipe_bin`: optional override if FragPipe is not in the default location.
+- `--run_casanovo` and `--run_aa_stat`: optional downstream steps. If binaries are missing, these steps are skipped with warnings.
+
+### Default values
+
+Pipeline parameter defaults (`nextflow.config`):
+
+- `outdir: ./results`
+- `raw_pattern: *.d,*.raw,*.RAW,*.mzML,*.mzml`
+- `run_casanovo: true`
+- `run_aa_stat: true`
+- `fragpipe_threads: 8`
+- `fragpipe_ram_gb: 32`
+- `fragpipe_bin: $FRAGPIPE_BIN or $HOME/fragpipe/bin/fragpipe`
+- `aa_stat_bin: $AA_STAT_BIN or $HOME/.local/bin/AA_stat`
+- `casanovo_bin: $CASANOVO_BIN or $HOME/.local/bin/casanovo`
+
+Default process resources (`conf/base.config`):
+
+- `process_low`: `2 CPUs`, `8 GB`
+- `process_medium`: `4 CPUs`, `32 GB`
+- `process_high`: `8 CPUs`, `32 GB`
+
+Default publish behavior (`conf/modules.config`):
+
+- Outputs are copied to `results/<process_name>/` (lowercase process name)
+- `versions.yml` is not copied to output process folders
+
+FragPipe template defaults in the repository (`fp.dl.workflow.txt`):
+
+```text
+database.db-path=/root/fragpipe/2024-06-01-decoys-contam-UP000005640.fas
+fragpipe-config.tools-folder=/root/fragpipe/tools
+fragpipe-config.bin-diann=/root/fragpipe/tools/diann/1.8.2_beta_8/linux/diann-1.8.1.8
+fragpipe-config.bin-python=/usr/bin/python3
+```
+
+FragPipe manifest template default (`fp.manifest.txt`):
+
+```text
+RAWDIR  RAWFILE  DDA
+```
+
+These FragPipe template values are not automatically discovered from your system. Update them for your environment, then pass them via `--scripts_dir` (or explicit `--fragpipe_manifest` + `--fragpipe_workflow`).
+
+### Monitoring progress
+
+For live pipeline status, follow the Nextflow log:
+
+```bash
+tail -f .nextflow.log
+```
+
+For sample-level FragPipe progress, inspect the active task work directory and follow the process output:
+
+```bash
+find work -maxdepth 3 -type f -name .command.out
+tail -f work/<hash>/<hash>/.command.out
+```
+
+If you want both stdout and stderr together, use:
+
+```bash
+tail -f work/<hash>/<hash>/.command.log
+```
+
+Useful optional Nextflow reports:
+
+```bash
+nextflow run nf-core/opensearch \
+  --input_dir /path/to/raw_inputs \
+  --scripts_dir /path/to/scripts \
+  -with-report \
+  -with-trace \
+  -with-timeline \
+  -with-dag flowchart.png
+```
+
+### Runtime notes
+
+- FragPipe inputs are staged into the task work directory before execution. This is intentional and helps avoid reader issues with mounted source paths.
+- Casanovo and AA_stat start only after FragPipe produces the expected `mzML` and `pepXML` outputs.
+- If FragPipe fails, the pipeline now stops with a real process error instead of reporting a misleading "successful with errors" summary.
+- For detailed process debugging, inspect `.command.sh`, `.command.out`, `.command.err`, and `.command.log` inside the relevant `work/` directory.
 
 > [!WARNING]
 > Please provide pipeline parameters via the CLI or Nextflow `-params-file` option. Custom config files including those provided by the `-c` Nextflow option can be used to provide any configuration _**except for parameters**_; see [docs](https://nf-co.re/docs/running/run-pipelines#using-parameter-files).
@@ -72,17 +196,38 @@ For more details and further functionality, please refer to the [usage documenta
 
 ## Pipeline output
 
-To see the results of an example test run with a full size dataset refer to the [results](https://nf-co.re/opensearch/results) tab on the nf-core website pipeline page.
-For more details about the output files and reports, please refer to the
-[output documentation](https://nf-co.re/opensearch/output).
+By default, outputs are written under `--outdir` (default: `results`) in process-specific subfolders:
+
+- `results/fragpipe/`
+- `results/casanovo/` (if enabled and available)
+- `results/aa_stat/` (if enabled and available)
+
+For FragPipe, each sample is published as a work directory named like:
+
+- `results/fragpipe/<sample>.FPv22hum/`
+
+For example, PTM-Shepherd summary tables are typically found at:
+
+- `results/fragpipe/20250909_CSF_13_b_Slot1-32_1_11095.FPv22hum/ptm-shepherd-output/global.modsummary.tsv`
+
+Note that FragPipe creates many nested files; calibrated mzML and pepXML outputs are also produced and then used by optional Casanovo and AA_stat steps.
+
+For more details, please refer to the [output documentation](https://nf-co.re/opensearch/output).
+
+## Development
+
+```bash
+python -m venv nf-core
+source nf-core/bin/activate
+pip install nf-core
+nf-core pipelines lint .
+nf-core modules lint .
+```
+
 
 ## Credits
 
-nf-core/opensearch was originally written by animesh.
-
-We thank the following people for their extensive assistance in the development of this pipeline:
-
-<!-- TODO nf-core: If applicable, make list of people who have also contributed -->
+nf-core/opensearch is maintained by the nf-core community.
 
 ## Contributions and Support
 
@@ -92,10 +237,9 @@ For further information or help, don't hesitate to get in touch on the [Slack `#
 
 ## Citations
 
-<!-- TODO nf-core: Add citation for pipeline after first release. Uncomment lines below and update Zenodo doi and badge at the top of this file. -->
-<!-- If you use nf-core/opensearch for your analysis, please cite it using the following doi: [10.5281/zenodo.XXXXXX](https://doi.org/10.5281/zenodo.XXXXXX) -->
+[opensearch](https://github.com/animesh/opensearch) is created with great help from [github-copilot](https://github.com/copilot)
 
-<!-- TODO nf-core: Add bibliography of tools and data used in your pipeline -->
+Please don't forget to cite what `opensearch` is really based upon, [Fragpipe](https://github.com/Nesvilab/FragPipe), [AA_stat](https://github.com/SimpleNumber/aa_stat), and  [Casanovo](https://github.com/Noble-Lab/casanovo)!
 
 An extensive list of references for the tools used by the pipeline can be found in the [`CITATIONS.md`](CITATIONS.md) file.
 
@@ -106,3 +250,4 @@ You can cite the `nf-core` publication as follows:
 > Philip Ewels, Alexander Peltzer, Sven Fillinger, Harshil Patel, Johannes Alneberg, Andreas Wilm, Maxime Ulysse Garcia, Paolo Di Tommaso & Sven Nahnsen.
 >
 > _Nat Biotechnol._ 2020 Feb 13. doi: [10.1038/s41587-020-0439-x](https://dx.doi.org/10.1038/s41587-020-0439-x).
+

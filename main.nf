@@ -30,19 +30,30 @@ include { PIPELINE_COMPLETION     } from './subworkflows/local/utils_nfcore_open
 workflow NFCORE_OPENSEARCH {
 
     take:
-    samplesheet // channel: samplesheet read in from --input
+    samplesheet // channel: tuple(sample_id, raw_input_path)
 
     main:
+
+    if (!params.fragpipe_manifest && !params.scripts_dir) {
+        error "Please provide FragPipe inputs via either --scripts_dir <dir-with-fp.manifest.txt-and-fp.dl.workflow.txt> or --fragpipe_manifest <file> plus --fragpipe_workflow <file>."
+    }
+    if (params.fragpipe_manifest && !params.fragpipe_workflow) {
+        error "When using --fragpipe_manifest you must also provide --fragpipe_workflow."
+    }
+    if (params.fragpipe_workflow && !params.fragpipe_manifest) {
+        error "When using --fragpipe_workflow you must also provide --fragpipe_manifest."
+    }
+
+    manifest_ch = Channel.fromPath(params.fragpipe_manifest ?: "${params.scripts_dir}/fp.manifest.txt", checkIfExists: true)
+    workflow_ch = Channel.fromPath(params.fragpipe_workflow ?: "${params.scripts_dir}/fp.dl.workflow.txt", checkIfExists: true)
 
     //
     // WORKFLOW: Run pipeline
     //
     OPENSEARCH (
         samplesheet,
-        params.multiqc_config,
-        params.multiqc_logo,
-        params.multiqc_methods_description,
-        params.outdir,
+        manifest_ch,
+        workflow_ch,
     )
     emit:
     multiqc_report = OPENSEARCH.out.multiqc_report // channel: /path/to/multiqc_report.html

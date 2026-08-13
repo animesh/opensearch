@@ -6,58 +6,75 @@
 
 ## Introduction
 
-<!-- TODO nf-core: Add documentation about anything specific to running your pipeline. For general topics, please point to (and add to) the main nf-core website. -->
+This pipeline is designed for open-search proteomics workflows using FragPipe as the primary engine, with optional Casanovo and AA_stat downstream steps.
 
-## Samplesheet input
+You must provide FragPipe template files either via `--scripts_dir` or by explicitly setting both `--fragpipe_manifest` and `--fragpipe_workflow`.
 
-You will need to create a samplesheet with information about the samples you would like to analyse before running the pipeline. Use this parameter to specify its location. It has to be a comma-separated file with 3 columns, and a header row as shown in the examples below.
+## Input modes
+
+The pipeline supports two input modes.
+
+### Samplesheet mode (`--input`)
+
+Provide a CSV with exactly two required columns: `ID` and `raw-file-name`.
 
 ```bash
 --input '[path to samplesheet file]'
 ```
 
-### Multiple runs of the same sample
-
-The `sample` identifiers have to be the same when you have re-sequenced the same sample more than once e.g. to increase sequencing depth. The pipeline will concatenate the raw reads before performing any downstream analysis. Below is an example for the same sample sequenced across 3 lanes:
-
 ```csv title="samplesheet.csv"
-sample,fastq_1,fastq_2
-CONTROL_REP1,AEG588A1_S1_L002_R1_001.fastq.gz,AEG588A1_S1_L002_R2_001.fastq.gz
-CONTROL_REP1,AEG588A1_S1_L003_R1_001.fastq.gz,AEG588A1_S1_L003_R2_001.fastq.gz
-CONTROL_REP1,AEG588A1_S1_L004_R1_001.fastq.gz,AEG588A1_S1_L004_R2_001.fastq.gz
-```
-
-### Full samplesheet
-
-The pipeline will auto-detect whether a sample is single- or paired-end using the information provided in the samplesheet. The samplesheet can have as many columns as you desire, however, there is a strict requirement for the first 3 columns to match those defined in the table below.
-
-A final samplesheet file consisting of both single- and paired-end data may look something like the one below. This is for 6 samples, where `TREATMENT_REP3` has been sequenced twice.
-
-```csv title="samplesheet.csv"
-sample,fastq_1,fastq_2
-CONTROL_REP1,AEG588A1_S1_L002_R1_001.fastq.gz,AEG588A1_S1_L002_R2_001.fastq.gz
-CONTROL_REP2,AEG588A2_S2_L002_R1_001.fastq.gz,AEG588A2_S2_L002_R2_001.fastq.gz
-CONTROL_REP3,AEG588A3_S3_L002_R1_001.fastq.gz,AEG588A3_S3_L002_R2_001.fastq.gz
-TREATMENT_REP1,AEG588A4_S4_L003_R1_001.fastq.gz,
-TREATMENT_REP2,AEG588A5_S5_L003_R1_001.fastq.gz,
-TREATMENT_REP3,AEG588A6_S6_L003_R1_001.fastq.gz,
-TREATMENT_REP3,AEG588A6_S6_L004_R1_001.fastq.gz,
+ID,raw-file-name
+sample_orbitrap,/data/orbitrap/171010_Ip_Hela_ugi.raw
+sample_timstof,/data/timstof/20260513_TO123.d
 ```
 
 | Column    | Description                                                                                                                                                                            |
 | --------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `sample`  | Custom sample name. This entry will be identical for multiple sequencing libraries/runs from the same sample. Spaces in sample names are automatically converted to underscores (`_`). |
-| `fastq_1` | Full path to FastQ file for Illumina short reads 1. File has to be gzipped and have the extension ".fastq.gz" or ".fq.gz".                                                             |
-| `fastq_2` | Full path to FastQ file for Illumina short reads 2. File has to be gzipped and have the extension ".fastq.gz" or ".fq.gz".                                                             |
+| `ID` | Sample identifier used for process tagging and output naming. |
+| `raw-file-name` | Full path to a raw mass spectrometry input, either an Orbitrap raw file (for example `.raw`) or a timsTOF directory (for example `.d`). |
 
-An [example samplesheet](../assets/samplesheet.csv) has been provided with the pipeline.
+### Directory mode (`--input_dir`)
+
+Provide a parent directory and optional filename glob patterns.
+
+```bash
+--input_dir /path/to/raw_inputs --raw_pattern '*.raw,*.d'
+```
+
+`--raw_pattern` accepts comma-separated glob patterns and defaults to:
+
+```text
+*.d,*.raw,*.RAW,*.mzML,*.mzml
+```
 
 ## Running the pipeline
 
-The typical command for running the pipeline is as follows:
+The typical command for running the pipeline with a samplesheet is as follows:
 
 ```bash
-nextflow run nf-core/opensearch --input ./samplesheet.csv --outdir ./results  -profile docker
+nextflow run nf-core/opensearch \
+  -profile docker \
+  --input ./samplesheet.csv \
+  --scripts_dir /path/to/scripts \
+  --outdir ./results
+```
+
+Directory mode example:
+
+```bash
+nextflow run nf-core/opensearch \
+  -profile docker \
+  --input_dir /path/to/raw_inputs \
+  --raw_pattern '*.raw' \
+  --scripts_dir /path/to/scripts \
+  --outdir ./results
+```
+
+If not using `--scripts_dir`, provide both:
+
+```bash
+--fragpipe_manifest /path/to/fp.manifest.txt
+--fragpipe_workflow /path/to/fp.dl.workflow.txt
 ```
 
 This will launch the pipeline with the `docker` configuration profile. See below for more information about profiles.

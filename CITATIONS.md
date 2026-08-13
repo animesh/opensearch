@@ -10,7 +10,21 @@
 
 ## Pipeline tools
 
+- [FragPipe](https://pubmed.ncbi.nlm.nih.gov/32616513/)
 
+> Yu F, Haynes SE, Teo GC, Avtonomov DM, Polasky DA, Nesvizhskii AI. Fast quantitative analysis of timsTOF PASEF data with MSFragger and IonQuant. Mol Cell Proteomics. 2024;23(1):100703. doi: 10.1016/j.mcpro.2023.100703.
+
+- [MSFragger](https://pubmed.ncbi.nlm.nih.gov/28394336/)
+
+> Kong AT, Leprevost FV, Avtonomov DM, Mellacheruvu D, Nesvizhskii AI. MSFragger: ultrafast and comprehensive peptide identification in mass spectrometry-based proteomics. Nat Methods. 2017;14(5):513-520. doi: 10.1038/nmeth.4256.
+
+- [Casanovo](https://pubmed.ncbi.nlm.nih.gov/39080256/)
+
+> Yilmaz M, Fondrie WE, Bittremieux W, Oh S, Noble WS. De novo peptide sequencing by deep learning. Nature Machine Intelligence. 2024;6:726-737. doi: 10.1038/s42256-024-00879-1.
+
+- [AA_stat](https://pubmed.ncbi.nlm.nih.gov/34389500/)
+
+> Levitsky LI et al., AA_stat: Intelligent profiling of in vivo and in vitro modifications from open search results.
 
 - [MultiQC](https://pubmed.ncbi.nlm.nih.gov/27312411/)
 

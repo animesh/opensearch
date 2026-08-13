@@ -4,10 +4,6 @@ nf_core_version: 4.1.0
 
 lint:
   nextflow_config: false
-  files_exist:
-    - nextflow_schema.json
-    - conf/igenomes.config
-    - conf/igenomes_ignored.config
   schema_lint: false
   schema_params: false
   schema_description: false

@@ -26,7 +26,7 @@ workflow PIPELINE_INITIALISATION {
     version           // boolean: Display version and exit
     nextflow_cli_args //   array: List of positional nextflow CLI args
     outdir            //  string: The output directory where the results will be saved
-    input             //  string: Path to input samplesheet
+    input             //  string: Path to input samplesheet (ID, raw-file-name)
 
     main:
 
@@ -50,32 +50,53 @@ workflow PIPELINE_INITIALISATION {
     )
 
     //
-    // Create channel from input file provided through params.input
+    // Create channel from samplesheet or input directory
     //
 
-    channel
-        .fromPath(input)
-        .splitCsv(header: true, strip: true)
-        .map { row ->
-            [[id:row.sample], row.fastq_1, row.fastq_2]
+    if (input) {
+        channel
+            .fromPath(input, checkIfExists: true)
+            .splitCsv(header: true, strip: true)
+            .map { row ->
+                validateInputSamplesheetRow(row)
+            }
+            .set { ch_samplesheet }
+    } else if (params.input_dir) {
+        def patterns = params.raw_pattern
+            .toString()
+            .split(',')
+            .collect { it.trim() }
+            .findAll { it }
+
+        if (!patterns) {
+            error("Please provide at least one pattern in --raw_pattern")
         }
-        .map {
-            meta, fastq_1, fastq_2 ->
-                if (!fastq_2) {
-                    return [ meta.id, meta + [ single_end:true ], [ fastq_1 ] ]
-                } else {
-                    return [ meta.id, meta + [ single_end:false ], [ fastq_1, fastq_2 ] ]
-                }
-        }
-        .groupTuple()
-        .map { samplesheet ->
-            validateInputSamplesheet(samplesheet)
-        }
-        .map {
-            meta, fastqs ->
-                return [ meta, fastqs.flatten() ]
-        }
-        .set { ch_samplesheet }
+
+        def discovered = patterns
+            .collect { pat ->
+                Channel
+                    .fromPath("${params.input_dir}/${pat}", type: 'any')
+                    .mix(Channel.fromPath("${params.input_dir}/**/${pat}", type: 'any'))
+            }
+            .inject(Channel.empty()) { acc, ch ->
+                acc.mix(ch)
+            }
+
+        discovered
+            .ifEmpty {
+                error("No files match pattern(s) '${params.raw_pattern}' under '${params.input_dir}'")
+            }
+            .filter { raw_path ->
+                raw_path.isDirectory() || raw_path.isFile()
+            }
+            .map { raw_path ->
+                def sample_id = deriveSampleIdFromRaw(raw_path)
+                tuple(sample_id, raw_path)
+            }
+            .set { ch_samplesheet }
+    } else {
+        error("Please provide either --input <samplesheet.csv> or --input_dir <directory>")
+    }
 
     emit:
     samplesheet = ch_samplesheet
@@ -134,18 +155,30 @@ workflow PIPELINE_COMPLETION {
 */
 
 //
-// Validate channels from input samplesheet
+// Validate rows from input samplesheet
 //
-def validateInputSamplesheet(input) {
-    def (metas, fastqs) = input[1..2]
+def validateInputSamplesheetRow(row) {
+    def sample_id = row.ID?.toString()?.trim()
+    def raw_name  = row['raw-file-name']?.toString()?.trim()
 
-    // Check that multiple runs of the same sample are of the same datatype i.e. single-end / paired-end
-    def endedness_ok = metas.collect{ meta -> meta.single_end }.unique().size == 1
-    if (!endedness_ok) {
-        error("Please check input samplesheet -> Multiple runs of a sample must be of the same datatype i.e. single-end or paired-end: ${metas[0].id}")
+    if (!sample_id) {
+        error("Please check input samplesheet -> Missing required column/value: 'ID'")
+    }
+    if (!raw_name) {
+        error("Please check input samplesheet -> Missing required column/value: 'raw-file-name'")
     }
 
-    return [ metas[0], fastqs ]
+    def raw_path = file(raw_name, checkIfExists: true)
+    if (!(raw_path.isDirectory() || raw_path.isFile())) {
+        error("Input path is neither a file nor directory: ${raw_name}")
+    }
+
+    return tuple(sample_id, raw_path)
+}
+
+def deriveSampleIdFromRaw(raw_path) {
+    def name = raw_path.getFileName().toString()
+    return name.replaceFirst(/\.[^.]+$/, '')
 }
 //
 // Generate methods description for MultiQC
