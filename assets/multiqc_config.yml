@@ -13,3 +13,76 @@ report_section_order:
 export_plots: true
 
 disable_version_detection: true
+
+sp:
+  fragpipe_stats:
+    fn: "*_fragpipe_mqc.tsv"
+  casanovo_stats:
+    fn: "*_casanovo_mqc.tsv"
+  aastat_stats:
+    fn: "*_aastat_mqc.tsv"
+
+custom_data:
+  fragpipe_stats:
+    id: "fragpipe_stats"
+    section_name: "FragPipe Results"
+    description: "PSM, peptide and protein identification counts per sample."
+    plot_type: "generalstats"
+    pconfig:
+      psm_count:
+        title: "PSMs"
+        description: "Number of PSMs"
+        min: 0
+        format: "{:,.0f}"
+      peptide_count:
+        title: "Peptides"
+        description: "Number of unique peptides"
+        min: 0
+        format: "{:,.0f}"
+      protein_count:
+        title: "Proteins"
+        description: "Number of identified proteins"
+        min: 0
+        format: "{:,.0f}"
+  casanovo_stats:
+    id: "casanovo_stats"
+    section_name: "Casanovo De Novo Sequencing"
+    description: "Spectra sequenced and confidence score distribution per sample."
+    plot_type: "generalstats"
+    pconfig:
+      total_spectra:
+        title: "Total Spectra"
+        description: "Total MS2 spectra submitted"
+        min: 0
+        format: "{:,.0f}"
+      sequenced_spectra:
+        title: "Sequenced"
+        description: "Spectra sequenced by Casanovo"
+        min: 0
+        format: "{:,.0f}"
+      score_ge_50pct:
+        title: "Score>=0.5"
+        description: "Spectra with confidence score >= 0.5"
+        min: 0
+        format: "{:,.0f}"
+      score_ge_90pct:
+        title: "Score>=0.9"
+        description: "Spectra with confidence score >= 0.9"
+        min: 0
+        format: "{:,.0f}"
+  aastat_stats:
+    id: "aastat_stats"
+    section_name: "AA_stat Modification Profiling"
+    description: "Mass shift and localization counts from AA_stat."
+    plot_type: "generalstats"
+    pconfig:
+      n_mass_shifts:
+        title: "Mass Shifts"
+        description: "Number of significant mass shifts detected"
+        min: 0
+        format: "{:,.0f}"
+      n_localizations:
+        title: "Localizations"
+        description: "Number of localized mass shifts"
+        min: 0
+        format: "{:,.0f}"

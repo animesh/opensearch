@@ -23,7 +23,7 @@ The pipeline is built using [Nextflow](https://www.nextflow.io/) and processes d
 <summary>Output files</summary>
 
 - `fragpipe/`
-  - `<sample>.FPv22hum/`: FragPipe work directory for each sample
+  - `<sample>.FPv24hum/`: FragPipe work directory for each sample
   - `*_calibrated.mzML`: calibrated mzML files used by downstream tools
   - `*.pepXML`: peptide-spectrum match outputs used by AA_stat
 

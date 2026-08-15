@@ -21,9 +21,57 @@
 
 ## Introduction
 
-**nf-core/opensearch** is a Nextflow pipeline for proteomics open-search analysis of Orbitrap raw files and timsTOF `.d` directories.
+**nf-core/opensearch** is a Nextflow pipeline for proteomics open-search analysis of DDA-mode Orbitrap raw files and timsTOF `.d` directories.
 
-The workflow runs FragPipe first, then optionally runs Casanovo (de novo sequencing) and AA_stat (modification profiling) from FragPipe outputs. Inputs can be provided using a samplesheet (`ID`, `raw-file-name`) or by scanning an input directory using filename patterns.
+The workflow runs FragPipe first, then optionally runs Casanovo (de novo sequencing) and AA_stat (modification profiling) from FragPipe outputs, finally reports to [MultiQC](https://docs.seqera.io/multiqc/getting_started/installation). Inputs can be provided using a samplesheet (`ID`, `raw-file-name`) or by scanning an input directory using filename patterns.
+
+### Quick start
+
+Install [Fragpipe](https://github.com/Nesvilab/FragPipe/releases#release-24.0), [MultiQC](https://docs.seqera.io/multiqc/getting_started/installation) 	
+`pip install multiqc` and configure [fp.dl.workflow.txt](fp.dl.workflow.txt) specifically folliowing variables, note that `database.db-path` above points to a fasta file containing decoys and contaminants generated with Fragpipe itself and tools are downloaded via its GUI as well
+
+```bash
+database.db-path=/root/fragpipe24v/2024-06-01-decoys-contam-UP000005640.fas
+
+fragpipe-config.tools-folder=/root/fragpipe24v/tools
+fragpipe-config.bin-diann=/root/fragpipe24v/tools/diann/1.8.2_beta_8/linux/diann-1.8.1.8
+fragpipe-config.bin-python=/usr/bin/python3
+```
+
+probably better to install optional tools as they can take in the `_calibrated.mzML` output from Fragpipe give a second opinion on mods like [AA_stat](https://pypi.org/project/AA-stat/) `pip install AA_stat` and [Casanovo](https://pypi.org/project/casanovo/) `pip install casanovo` which can run de-novo sequecing on the data, but need find there binaries `whereis AA_stat casanovo`to analyze `--input_dir`
+
+```bash
+nextflow run . --input_dir $PWD --scripts_dir $PWD --fragpipe_bin /root/fragpipe24v/bin/fragpipe --aa_stat_bin /root/miniforge3/bin/AA_stat --casanovo_bin /root/miniforge3/bin/casanovo -resume 
+
+ N E X T F L O W   ~  version 26.04.6
+
+Launching `./main.nf` [scruffy_ride] revision: e70a121c00
+
+WARN: [nf-core/opensearch] You are attempting to run the pipeline without any custom configuration!
+
+This will be dependent on your local compute environment but can be achieved via one or more of the following:
+   (1) Using an existing pipeline profile e.g. `-profile docker` or `-profile singularity`
+   (2) Using an existing nf-core/configs for your Institution e.g. `-profile crick` or `-profile uppmax`
+   (3) Using your own local custom config e.g. `-c /path/to/your/custom.config`
+
+Please refer to the quick start section and usage docs for the pipeline.
+ 
+executor >  local (4)
+[cd/a3a19d] NFCORE_OPENSEARCH:OPENSEARCH:FRAGPIPE (191107_SIRI_1_TK9_ctr1) [100%] 1 of 1 ✔
+[65/26abc1] NFCORE_OPENSEARCH:OPENSEARCH:CASANOVO (191107_SIRI_1_TK9_ctr1) [100%] 1 of 1 ✔
+[7c/627fdc] NFCORE_OPENSEARCH:OPENSEARCH:AA_STAT (191107_SIRI_1_TK9_ctr1)  [100%] 1 of 1 ✔
+[a5/f048cd] NFCORE_OPENSEARCH:OPENSEARCH:MULTIQC (multiqc)                 [100%] 1 of 1 ✔
+-[nf-core/opensearch] Pipeline completed successfully-
+Completed at: 15-Aug-2026 18:47:20
+Duration    : 26m 43s
+CPU hours   : 2.8
+Succeeded   : 4
+```
+
+NOTE: Casanovo needs GPU to be efficient, but it doesnt have to be the latest and greatest, RTX2070 via WSL is enough
+
+![RTX2070 on WSL](<images/Screenshot 2026-08-15 153254.png>)
+
 
 Default workflow steps:
 
@@ -33,7 +81,8 @@ Default workflow steps:
 4. Run AA_stat from generated calibrated `mzML` and `pepXML` files (optional)
 5. Produce standard nf-core pipeline metadata and reports
 
-## Usage
+
+## More on Usage
 
 > [!NOTE]
 > If you are new to Nextflow and nf-core, please refer to [this page](https://nf-co.re/docs/get_started/environment_setup/overview) on how to set-up Nextflow. Make sure to [test your setup](https://nf-co.re/docs/get_started/run-your-first-pipeline) with `-profile test` before running the workflow on actual data.
@@ -204,11 +253,11 @@ By default, outputs are written under `--outdir` (default: `results`) in process
 
 For FragPipe, each sample is published as a work directory named like:
 
-- `results/fragpipe/<sample>.FPv22hum/`
+- `results/fragpipe/<sample>.FPv24hum/`
 
 For example, PTM-Shepherd summary tables are typically found at:
 
-- `results/fragpipe/20250909_CSF_13_b_Slot1-32_1_11095.FPv22hum/ptm-shepherd-output/global.modsummary.tsv`
+- `results/fragpipe/20250909_CSF_13_b_Slot1-32_1_11095.FPv24hum/ptm-shepherd-output/global.modsummary.tsv`
 
 Note that FragPipe creates many nested files; calibrated mzML and pepXML outputs are also produced and then used by optional Casanovo and AA_stat steps.
 
