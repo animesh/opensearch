@@ -23,28 +23,30 @@
 
 **nf-core/opensearch** is a Nextflow pipeline for proteomics open-search analysis of DDA-mode Orbitrap raw files and timsTOF `.d` directories.
 
-The workflow runs FragPipe first, then optionally runs Casanovo (de novo sequencing) and AA_stat (modification profiling) from FragPipe outputs, finally reports to [MultiQC](https://docs.seqera.io/multiqc/getting_started/installation). Inputs can be provided using a samplesheet (`ID`, `raw-file-name`) or by scanning an input directory using filename patterns.
+The workflow runs FragPipe first, then optionally runs Casanovo (de novo sequencing) and AA_stat (modification profiling) from FragPipe outputs, finally reports to [MultiQC](https://docs.seqera.io/multiqc/getting_started/installation). Inputs can be provided using a samplesheet (`ID`, `raw-file-name`) or by scanning an input directory using filename patterns. 
 
 ### Quick start
 
-Install [Fragpipe](https://github.com/Nesvilab/FragPipe/releases#release-24.0), [MultiQC](https://docs.seqera.io/multiqc/getting_started/installation) 	
+Install [Java](https://www.oracle.com/java/technologies/downloads/#java21), [Mono](https://www.mono-project.com/download/stable/), [Fragpipe](https://github.com/Nesvilab/FragPipe/releases#release-24.0), [MultiQC](https://docs.seqera.io/multiqc/getting_started/installation) 	
 `pip install multiqc` and configure [fp.dl.workflow.txt](fp.dl.workflow.txt) specifically folliowing variables, note that `database.db-path` above points to a fasta file containing decoys and contaminants generated with Fragpipe itself and tools are downloaded via its GUI as well
 
 ```bash
-database.db-path=/root/fragpipe24v/2024-06-01-decoys-contam-UP000005640.fas
+database.db-path=/home/ash022/fragpipe/2024-06-01-decoys-contam-UP000005640.fas
 
-fragpipe-config.tools-folder=/root/fragpipe24v/tools
-fragpipe-config.bin-diann=/root/fragpipe24v/tools/diann/1.8.2_beta_8/linux/diann-1.8.1.8
+fragpipe-config.tools-folder=/home/ash022/fragpipe/tools
+fragpipe-config.bin-diann=/home/ash022/fragpipe/tools/diann/1.8.2_beta_8/linux/diann-1.8.1.8
 fragpipe-config.bin-python=/usr/bin/python3
 ```
 
-probably better to install optional tools as they can take in the `_calibrated.mzML` output from Fragpipe give a second opinion on mods like [AA_stat](https://pypi.org/project/AA-stat/) `pip install AA_stat` and [Casanovo](https://pypi.org/project/casanovo/) `pip install casanovo` which can run de-novo sequecing on the data, but need find there binaries `whereis AA_stat casanovo`to analyze `--input_dir`
+probably better to install optional tools as they can take in the `_calibrated.mzML` output from Fragpipe give a second opinion on mods like [AA_stat](https://pypi.org/project/AA-stat/) `pip install AA_stat` and [Casanovo](https://pypi.org/project/casanovo/) `pip install casanovo` which can run de-novo sequecing on the data, but need find there binaries `whereis AA_stat casanovo` and change following command-line accordingly to analyze `--input_dir`
 
 ```bash
-nextflow run . --input_dir $PWD --raw_pattern '*.raw' --scripts_dir $PWD   --fragpipe_bin /root/fragpipe24v/bin/fragpipe   --aa_stat_bin /root/miniforge3/bin/AA_stat   --casanovo_bin /root/miniforge3/bin/casanovo -resume
+curl -s https://get.nextflow.io | bash
+./nextflow run . --input_dir $PWD --raw_pattern '*.raw' --scripts_dir $PWD   --fragpipe_bin /home/ash022/fragpipe/bin/fragpipe   --aa_stat_bin /home/ash022/.local/bin/AA_stat   --casanovo_bin /home/ash022/.local/bin/casanovo  -resume
+
  N E X T F L O W   ~  version 26.04.6
 
-Launching `./main.nf` [scruffy_ride] revision: e70a121c00
+Launching `./main.nf` [soggy_hawking] revision: f8a65f9409
 
 WARN: [nf-core/opensearch] You are attempting to run the pipeline without any custom configuration!
 
@@ -55,17 +57,27 @@ This will be dependent on your local compute environment but can be achieved via
 
 Please refer to the quick start section and usage docs for the pipeline.
  
-executor >  local (4)
-[cd/a3a19d] NFCORE_OPENSEARCH:OPENSEARCH:FRAGPIPE (191107_SIRI_1_TK9_ctr1) [100%] 1 of 1 ✔
-[65/26abc1] NFCORE_OPENSEARCH:OPENSEARCH:CASANOVO (191107_SIRI_1_TK9_ctr1) [100%] 1 of 1 ✔
-[7c/627fdc] NFCORE_OPENSEARCH:OPENSEARCH:AA_STAT (191107_SIRI_1_TK9_ctr1)  [100%] 1 of 1 ✔
-[a5/f048cd] NFCORE_OPENSEARCH:OPENSEARCH:MULTIQC (multiqc)                 [100%] 1 of 1 ✔
+executor >  local (11)
+[da/2d0014] NFC…I_TK12_CTR2_20200323222228) | 3 of 3 ✔
+[11/c773a9] NFC…I_TK12_CTR2_20200323222228) | 3 of 3 ✔
+[c3/2fd2a6] NFC…I_TK12_CTR2_20200323222228) | 3 of 3 ✔
+[ce/9ff3b0] NFC…UMMARY (integrated summary) | 1 of 1 ✔
+[fc/991b19] NFC…PENSEARCH:MULTIQC (multiqc) | 1 of 1 ✔
 -[nf-core/opensearch] Pipeline completed successfully-
-Completed at: 15-Aug-2026 18:47:20
-Duration    : 26m 43s
-CPU hours   : 2.8
-Succeeded   : 4
+Completed at: 16-Aug-2026 20:52:09
+Duration    : 50m 53s
+CPU hours   : 7.9
+Succeeded   : 11
 ```
+
+The workflow runs FragPipe first and can then run Casanovo (de novo sequencing) and AA_stat (mass-shift/modification profiling) from the calibrated `mzML` and FragPipe outputs. The final reporting layer combines the three analyses into an integrated OpenSearch summary and also preserves the original tool-specific reports and MultiQC output.
+
+The integrated report treats the three tools as complementary views of the same MS/MS data:
+
+- **FragPipe:** what can be identified by database searching?
+- **Casanovo:** what can be sequenced de novo without relying on the protein database?
+- **AA_stat:** what unexplained precursor/peptide mass shifts and modification patterns are present?
+- **OpenSearch Summary:** what do these analyses collectively say about the dataset?
 
 NOTE: Casanovo needs GPU to be efficient, but it doesnt have to be the latest and greatest, RTX2070 via WSL is enough
 
@@ -79,6 +91,87 @@ Default workflow steps:
 3. Run Casanovo from generated calibrated `mzML` files (optional)
 4. Run AA_stat from generated calibrated `mzML` and `pepXML` files (optional)
 5. Produce standard nf-core pipeline metadata and reports
+
+### Integrated report
+
+The report adds a cross-tool analysis layer rather than simply presenting three independent tool summaries.
+
+It includes:
+
+1. **Executive sample comparison**
+   - FragPipe PSMs
+   - unique peptides
+   - proteins
+   - Casanovo de novo spectra
+   - Casanovo confidence thresholds
+   - AA_stat mass-shift counts
+
+2. **Identification funnel**
+   - Casanovo sequences
+   - FragPipe PSMs
+   - unique peptides
+   - proteins
+
+3. **Database-search versus de novo comparison**
+   - Casanovo/FragPipe PSM ratio
+   - database-search efficiency
+   - de novo confidence fractions
+
+4. **Casanovo confidence**
+   - spectra sequenced
+   - ≥0.00
+   - ≥0.50
+   - ≥0.90
+   - ≥0.95
+   - ≥0.99
+
+5. **Casanovo ↔ FragPipe sequence overlap**
+   - exact peptide sequences observed by both approaches
+   - Casanovo-only sequences
+   - overlap percentage
+
+   Casanovo-only sequences are deliberately described as *Casanovo-only candidates*, not automatically as novel peptides.
+
+6. **AA_stat mass-shift landscape**
+   - observed mass shifts
+   - peptide counts supporting each shift
+   - localization counts
+   - AA_stat interpretations where available
+   - isotope-related shifts separated from potentially biologically interesting shifts
+
+7. **Automatic observations**
+   - run-to-run differences
+   - identification efficiency
+   - de novo sequencing quality
+   - unusually prominent mass shifts
+
+The report is intended to answer not only *how many identifications were obtained*, but also *what each analysis contributes beyond the others*.
+
+### Reporting architecture
+
+The reporting flow is:
+
+```text
+RAW / .d
+   |
+   +--------------------+
+   |                    |
+FragPipe             calibrated mzML
+   |                    |
+   |             +------+------+
+   |             |             |
+   |          Casanovo       AA_stat
+   |             |             |
+   +-------------+-------------+
+                 |
+        OpenSearch Summary
+                 |
+              MultiQC
+                 |
+        multiqc_report.html
+```
+
+The integrated summary is implemented as a pipeline-specific MultiQC custom-content layer. This keeps the standard MultiQC modules intact while adding the OpenSearch interpretation layer.
 
 
 ## More on Usage
@@ -252,11 +345,11 @@ By default, outputs are written under `--outdir` (default: `results`) in process
 
 For FragPipe, each sample is published as a work directory named like:
 
-- `results/fragpipe/<sample>.FPv24hum/`
+- `results/fragpipe/<sample>.FPv24/`
 
 For example, PTM-Shepherd summary tables are typically found at:
 
-- `results/fragpipe/20250909_CSF_13_b_Slot1-32_1_11095.FPv24hum/ptm-shepherd-output/global.modsummary.tsv`
+- `results/fragpipe/20250909_CSF_13_b_Slot1-32_1_11095.FPv24/ptm-shepherd-output/global.modsummary.tsv`
 
 Note that FragPipe creates many nested files; calibrated mzML and pepXML outputs are also produced and then used by optional Casanovo and AA_stat steps.
 

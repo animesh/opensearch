@@ -1,0 +1,38 @@
+name: opensearch_summary
+description: >
+  Integrate FragPipe, Casanovo and AA_stat outputs into cross-tool MultiQC
+  custom content and a machine-readable summary table.
+keywords:
+  - proteomics
+  - mass spectrometry
+  - QC
+  - MultiQC
+  - de novo sequencing
+  - mass shifts
+tools:
+  - opensearch_summary:
+      description: Cross-tool summary script shipped with nf-core/opensearch.
+      homepage: https://github.com/animesh/opensearch
+      documentation: https://github.com/animesh/opensearch
+input:
+  - fragpipe_dirs:
+      type: directory
+      description: FragPipe result directories.
+  - casanovo_dirs:
+      type: directory
+      description: Casanovo result directories.
+  - aastat_dirs:
+      type: directory
+      description: AA_stat result directories.
+output:
+  - mqc_json:
+      type: file
+      description: MultiQC custom-content JSON files.
+  - mqc_html:
+      type: file
+      description: MultiQC custom-content HTML observations.
+  - summary:
+      type: file
+      description: Integrated tab-separated summary.
+authors:
+  - Animesh Sharma

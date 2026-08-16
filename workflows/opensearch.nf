@@ -2,6 +2,7 @@ include { FRAGPIPE } from '../modules/local/fragpipe'
 include { CASANOVO } from '../modules/local/casanovo'
 include { AA_STAT  } from '../modules/local/aa_stat'
 include { MULTIQC  } from '../modules/nf-core/multiqc/main'
+include { OPENSEARCH_SUMMARY } from '../modules/local/opensearch_summary'
 
 workflow OPENSEARCH {
     take:
@@ -38,6 +39,20 @@ workflow OPENSEARCH {
         AA_STAT(aa_stat_input)
         ch_multiqc_files = ch_multiqc_files.mix(AA_STAT.out.mqc.map { it[1] })
         ch_versions = ch_versions.mix(AA_STAT.out.versions)
+    }
+
+    // Build an integrated cross-tool summary before MultiQC. This consumes the
+    // complete FragPipe, Casanovo and AA_stat result directories and writes
+    // MultiQC-specific custom-content files. Keep this conditional because
+    // Casanovo and AA_stat are optional pipeline steps.
+    if (params.run_casanovo && casanovo_available && params.run_aa_stat && aa_stat_available) {
+        OPENSEARCH_SUMMARY(
+            FRAGPIPE.out.fp_dir.map { it[1] }.collect(),
+            CASANOVO.out.casanovo_dir.map { it[1] }.collect(),
+            AA_STAT.out.aa_stat_dir.map { it[1] }.collect()
+        )
+        ch_multiqc_files = ch_multiqc_files.mix(OPENSEARCH_SUMMARY.out.mqc_json)
+        ch_multiqc_files = ch_multiqc_files.mix(OPENSEARCH_SUMMARY.out.mqc_html)
     }
 
     // Collect all versions into a single file for MultiQC

@@ -3,10 +3,10 @@
 
 # Please edit the following path to point to the correct location.
 # In Windows, please replace single '\' with '\\'
-database.db-path=/root/fragpipe24v/2024-06-01-decoys-contam-UP000005640.fas
+database.db-path=/home/ash022/fragpipe/2024-06-01-decoys-contam-UP000005640.fas
 
-fragpipe-config.tools-folder=/root/fragpipe24v/tools
-fragpipe-config.bin-diann=/root/fragpipe24v/tools/diann/1.8.2_beta_8/linux/diann-1.8.1.8
+fragpipe-config.tools-folder=/home/ash022/fragpipe/tools
+fragpipe-config.bin-diann=/home/ash022/fragpipe/tools/diann/1.8.2_beta_8/linux/diann-1.8.1.8
 fragpipe-config.bin-python=/usr/bin/python3
 
 crystalc.run-crystalc=false
@@ -415,8 +415,8 @@ transfer-learning.predict-spectral-library=true
 transfer-learning.run-transfer-learning=false
 transfer-learning.spectral-library-path=
 workflow.description=<p style\="margin-top\: 0in">Open search workflow for PTM analysis. MSFragger localization-aware open search (LOS) algorithm, with deisotoping, mass calibration, parameter optimization, and monoisotope correction enabled. Mass range -150 to 500 Da. PeptideProphet with extended mass model. Crystal-C for artifact removal. Precursor ion quantification using Freequant. PTM-Shepherd for mass shift summarization. For faster run time, in MSFragger change the number of allowed missed cleavages to 1.</p>
-workflow.input.data-type.im-ms=false
-workflow.input.data-type.regular-ms=true
+workflow.input.data-type.im-ms=true
+workflow.input.data-type.regular-ms=false
 workflow.misc.save-sdrf=true
 workflow.misc.sdrf-type=Default
 workflow.saved-with-ver=24.0
