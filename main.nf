@@ -44,8 +44,8 @@ workflow NFCORE_OPENSEARCH {
         error "When using --fragpipe_workflow you must also provide --fragpipe_manifest."
     }
 
-    manifest_ch = Channel.fromPath(params.fragpipe_manifest ?: "${params.scripts_dir}/fp.manifest.txt", checkIfExists: true)
-    workflow_ch = Channel.fromPath(params.fragpipe_workflow ?: "${params.scripts_dir}/fp.dl.workflow.txt", checkIfExists: true)
+    manifest_ch = Channel.fromPath(params.fragpipe_manifest ?: "${params.scripts_dir}/fp.manifest.txt", checkIfExists: true).first()
+    workflow_ch = Channel.fromPath(params.fragpipe_workflow ?: "${params.scripts_dir}/fp.dl.workflow.txt", checkIfExists: true).first()
 
     //
     // WORKFLOW: Run pipeline

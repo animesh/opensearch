@@ -41,8 +41,7 @@ fragpipe-config.bin-python=/usr/bin/python3
 probably better to install optional tools as they can take in the `_calibrated.mzML` output from Fragpipe give a second opinion on mods like [AA_stat](https://pypi.org/project/AA-stat/) `pip install AA_stat` and [Casanovo](https://pypi.org/project/casanovo/) `pip install casanovo` which can run de-novo sequecing on the data, but need find there binaries `whereis AA_stat casanovo`to analyze `--input_dir`
 
 ```bash
-nextflow run . --input_dir $PWD --scripts_dir $PWD --fragpipe_bin /root/fragpipe24v/bin/fragpipe --aa_stat_bin /root/miniforge3/bin/AA_stat --casanovo_bin /root/miniforge3/bin/casanovo -resume 
-
+nextflow run . --input_dir $PWD --raw_pattern '*.raw' --scripts_dir $PWD   --fragpipe_bin /root/fragpipe24v/bin/fragpipe   --aa_stat_bin /root/miniforge3/bin/AA_stat   --casanovo_bin /root/miniforge3/bin/casanovo -resume
  N E X T F L O W   ~  version 26.04.6
 
 Launching `./main.nf` [scruffy_ride] revision: e70a121c00

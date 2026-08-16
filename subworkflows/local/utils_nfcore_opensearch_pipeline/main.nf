@@ -76,7 +76,6 @@ workflow PIPELINE_INITIALISATION {
             .collect { pat ->
                 Channel
                     .fromPath("${params.input_dir}/${pat}", type: 'any')
-                    .mix(Channel.fromPath("${params.input_dir}/**/${pat}", type: 'any'))
             }
             .inject(Channel.empty()) { acc, ch ->
                 acc.mix(ch)
