@@ -18,23 +18,28 @@ workflow OPENSEARCH {
     ch_multiqc_files = ch_multiqc_files.mix(FRAGPIPE.out.mqc.map { it[1] })
     ch_versions = FRAGPIPE.out.versions
 
+    // Coerce CLI-supplied flags to proper Groovy booleans.
+    // Without this, --run_aa_stat false on the command line arrives as the
+    // *string* "false", which is truthy in Groovy and bypasses every guard.
+    def run_casanovo    = params.run_casanovo.toString().toBoolean()
+    def run_aa_stat     = params.run_aa_stat.toString().toBoolean()
     def casanovo_available = params.casanovo_bin && new File(params.casanovo_bin as String).canExecute()
     def aa_stat_available  = params.aa_stat_bin && new File(params.aa_stat_bin as String).canExecute()
 
-    if (params.run_casanovo && !casanovo_available) {
+    if (run_casanovo && !casanovo_available) {
         log.warn "CASANOVO requested but binary is missing or not executable: '${params.casanovo_bin}'. Skipping CASANOVO step."
     }
-    if (params.run_aa_stat && !aa_stat_available) {
+    if (run_aa_stat && !aa_stat_available) {
         log.warn "AA_STAT requested but binary is missing or not executable: '${params.aa_stat_bin}'. Skipping AA_STAT step."
     }
 
-    if (params.run_casanovo && casanovo_available) {
+    if (run_casanovo && casanovo_available) {
         CASANOVO(FRAGPIPE.out.mzml)
         ch_multiqc_files = ch_multiqc_files.mix(CASANOVO.out.mqc.map { it[1] })
         ch_versions = ch_versions.mix(CASANOVO.out.versions)
     }
 
-    if (params.run_aa_stat && aa_stat_available) {
+    if (run_aa_stat && aa_stat_available) {
         aa_stat_input = FRAGPIPE.out.mzml.join(FRAGPIPE.out.pepxml, by: 0)
         AA_STAT(aa_stat_input)
         ch_multiqc_files = ch_multiqc_files.mix(AA_STAT.out.mqc.map { it[1] })
@@ -45,7 +50,7 @@ workflow OPENSEARCH {
     // complete FragPipe, Casanovo and AA_stat result directories and writes
     // MultiQC-specific custom-content files. Keep this conditional because
     // Casanovo and AA_stat are optional pipeline steps.
-    if (params.run_casanovo && casanovo_available && params.run_aa_stat && aa_stat_available) {
+    if (run_casanovo && casanovo_available && run_aa_stat && aa_stat_available) {
         OPENSEARCH_SUMMARY(
             FRAGPIPE.out.fp_dir.map { it[1] }.collect(),
             CASANOVO.out.casanovo_dir.map { it[1] }.collect(),
