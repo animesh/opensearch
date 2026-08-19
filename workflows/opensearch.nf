@@ -46,19 +46,18 @@ workflow OPENSEARCH {
         ch_versions = ch_versions.mix(AA_STAT.out.versions)
     }
 
-    // Build an integrated cross-tool summary before MultiQC. This consumes the
-    // complete FragPipe, Casanovo and AA_stat result directories and writes
-    // MultiQC-specific custom-content files. Keep this conditional because
-    // Casanovo and AA_stat are optional pipeline steps.
-    if (run_casanovo && casanovo_available && run_aa_stat && aa_stat_available) {
-        OPENSEARCH_SUMMARY(
-            FRAGPIPE.out.fp_dir.map { it[1] }.collect(),
-            CASANOVO.out.casanovo_dir.map { it[1] }.collect(),
-            AA_STAT.out.aa_stat_dir.map { it[1] }.collect()
-        )
-        ch_multiqc_files = ch_multiqc_files.mix(OPENSEARCH_SUMMARY.out.mqc_json)
-        ch_multiqc_files = ch_multiqc_files.mix(OPENSEARCH_SUMMARY.out.mqc_html)
+    // Build one integrated summary from whichever result directories exist.
+    // This makes --run_casanovo false / --run_aa_stat false work naturally.
+    summary_dirs = FRAGPIPE.out.fp_dir.map { it[1] }
+    if (run_casanovo && casanovo_available) {
+        summary_dirs = summary_dirs.mix(CASANOVO.out.casanovo_dir.map { it[1] })
     }
+    if (run_aa_stat && aa_stat_available) {
+        summary_dirs = summary_dirs.mix(AA_STAT.out.aa_stat_dir.map { it[1] })
+    }
+    OPENSEARCH_SUMMARY(summary_dirs.collect())
+    ch_multiqc_files = ch_multiqc_files.mix(OPENSEARCH_SUMMARY.out.mqc_json)
+    ch_multiqc_files = ch_multiqc_files.mix(OPENSEARCH_SUMMARY.out.mqc_html)
 
     // Collect all versions into a single file for MultiQC
     ch_versions

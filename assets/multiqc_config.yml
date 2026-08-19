@@ -9,29 +9,44 @@ report_section_order:
     order: -1000
   software_versions:
     order: -1001
-  "opensearch_executive":
+  "opensearch_executive_summary":
     order: -1002
   "opensearch_generalstats":
     order: -1003
-  "opensearch_funnel":
+  "ptm_shepherd_modification_landscape":
     order: -1004
-  "opensearch_casanovo_confidence":
+  "precursor_charge_distribution":
     order: -1005
-  "opensearch_sequence_overlap":
+  "missed_cleavage_distribution":
     order: -1006
-  "opensearch_mass_shifts":
+  "identification_funnel":
     order: -1007
-  "opensearch_observations":
+  "opensearch_casanovo_confidence":
     order: -1008
+  "casanovo_fragpipe_sequence_overlap":
+    order: -1009
+  "opensearch_aastat_annotations":
+    order: -1010
+  "protein_level_reproducibility":
+    order: -1011
+  "sample_qc_flags":
+    order: -1012
+  "opensearch_observations":
+    order: -1013
 
 custom_content:
   order:
-    - opensearch_executive
+    - opensearch_executive_summary
     - opensearch_generalstats
-    - opensearch_funnel
+    - ptm_shepherd_modification_landscape
+    - precursor_charge_distribution
+    - missed_cleavage_distribution
+    - identification_funnel
     - opensearch_casanovo_confidence
-    - opensearch_sequence_overlap
-    - opensearch_mass_shifts
+    - casanovo_fragpipe_sequence_overlap
+    - opensearch_aastat_annotations
+    - protein_level_reproducibility
+    - sample_qc_flags
     - opensearch_observations
 
 export_plots: true

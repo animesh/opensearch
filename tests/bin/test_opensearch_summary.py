@@ -38,11 +38,11 @@ class TestOpenSearchSummary(unittest.TestCase):
                 'mass shift,# peptides in bin,is isotope,localization\n'
                 "+57.0214,3,False,\"{'C_+57.0214': 2, 'non-localized': 1}\"\n")
 
-            r = run(['python3', str(SCRIPT), '--fragpipe', str(fp.parent), '--casanovo', str(cn), '--aastat', str(aa)], cwd=root, capture_output=True, text=True)
+            r = run(['python3', str(SCRIPT), '--dirs', str(fp.parent), str(cn), str(aa)], cwd=root, capture_output=True, text=True)
             self.assertEqual(r.returncode, 0, r.stderr)
             summary = (root/'summary.tsv').read_text()
             self.assertIn('S1', summary)
-            self.assertIn('\t2\t1\t100\t25\t5', summary)
+            self.assertIn('\t2\t2\t1\t100\t25.0\t5.0', summary)
             self.assertTrue((root/'opensearch_sequence_overlap_mqc.json').exists())
 
 if __name__ == '__main__':

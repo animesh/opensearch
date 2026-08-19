@@ -10,9 +10,9 @@ process FRAGPIPE {
     path workflow_file
 
     output:
-    tuple val(sample_id), path("*.FPv24"), emit: fp_dir
+    tuple val(sample_id), path("*.${params.fragpipe_workdir_suffix}"), emit: fp_dir
     tuple val(sample_id), val(mzml_path), emit: mzml
-    tuple val(sample_id), path("*.FPv24/*/*.pepXML"), emit: pepxml
+    tuple val(sample_id), path("*.${params.fragpipe_workdir_suffix}/*/*.pepXML"), emit: pepxml
     tuple val(sample_id), path("${sample_id}_fragpipe_mqc.tsv"), emit: mqc
     path "versions.yml", emit: versions
 
@@ -34,11 +34,11 @@ process FRAGPIPE {
         --ram ${params.fragpipe_ram_gb} \
         --workflow ${workflow_file} \
         --manifest fp.generated.manifest.txt \
-        --workdir ${sample_id}.FPv24
+        --workdir ${sample_id}.${params.fragpipe_workdir_suffix}
 
-    psm_count=\$(tail -n +2 ${sample_id}.FPv24/*/psm.tsv 2>/dev/null | wc -l || echo 0)
-    pep_count=\$(tail -n +2 ${sample_id}.FPv24/*/peptide.tsv 2>/dev/null | wc -l || echo 0)
-    prot_count=\$(tail -n +2 ${sample_id}.FPv24/*/protein.tsv 2>/dev/null | wc -l || echo 0)
+    psm_count=\$(tail -n +2 ${sample_id}.${params.fragpipe_workdir_suffix}/*/psm.tsv 2>/dev/null | wc -l || echo 0)
+    pep_count=\$(tail -n +2 ${sample_id}.${params.fragpipe_workdir_suffix}/*/peptide.tsv 2>/dev/null | wc -l || echo 0)
+    prot_count=\$(tail -n +2 ${sample_id}.${params.fragpipe_workdir_suffix}/*/protein.tsv 2>/dev/null | wc -l || echo 0)
     printf '# id: fragpipe_stats\n# plot_type: generalstats\n# pconfig:\n#   psm_count:\n#     title: PSMs\n#   peptide_count:\n#     title: Peptides\n#   protein_count:\n#     title: Proteins\nSample\tpsm_count\tpeptide_count\tprotein_count\n${sample_id}\t'\$psm_count'\t'\$pep_count'\t'\$prot_count'\n' > ${sample_id}_fragpipe_mqc.tsv
 
     cat <<-END_VERSIONS > versions.yml

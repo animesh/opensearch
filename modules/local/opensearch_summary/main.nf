@@ -5,9 +5,7 @@ process OPENSEARCH_SUMMARY {
     publishDir "${params.outdir}/pipeline_info", mode: 'copy', pattern: 'summary.tsv'
 
     input:
-    path fragpipe_dirs
-    path casanovo_dirs
-    path aastat_dirs
+    path result_dirs
 
     output:
     path '*_mqc.json', emit: mqc_json
@@ -16,9 +14,10 @@ process OPENSEARCH_SUMMARY {
 
     script:
     """
-    opensearch_summary.py \\
-        --fragpipe ${fragpipe_dirs.join(' ')} \\
-        --casanovo ${casanovo_dirs.join(' ')} \\
-        --aastat ${aastat_dirs.join(' ')}
+    opensearch_summary.py \
+        --dirs ${result_dirs.join(' ')} \
+        --fragpipe_suffix .${params.fragpipe_workdir_suffix} \
+        --casanovo_suffix .${params.casanovo_workdir_suffix} \
+        --aastat_suffix .${params.aastat_workdir_suffix}
     """
 }

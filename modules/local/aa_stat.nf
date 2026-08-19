@@ -6,7 +6,7 @@ process AA_STAT {
     tuple val(sample_id), val(mzml_file), path(pepxml_file)
 
     output:
-    tuple val(sample_id), path("${sample_id}.AA_statm"), emit: aa_stat_dir
+    tuple val(sample_id), path("${sample_id}.${params.aastat_workdir_suffix}"), emit: aa_stat_dir
     tuple val(sample_id), path("${sample_id}_aastat_mqc.tsv"), emit: mqc
     path "versions.yml", emit: versions
 
@@ -16,11 +16,11 @@ process AA_STAT {
         -n ${task.cpus} \
         --mzml ${mzml_file} \
         --pepxml ${pepxml_file} \
-        --dir ${sample_id}.AA_statm
+        --dir ${sample_id}.${params.aastat_workdir_suffix}
 
     # Extract number of mass shifts and recommended variable mods for general stats
-    n_shifts=\$(grep -c '^[+-]' ${sample_id}.AA_statm/aa_statistics_table.csv 2>/dev/null || echo 0)
-    n_loc=\$(tail -n +2 ${sample_id}.AA_statm/localization_statistics.csv 2>/dev/null | wc -l || echo 0)
+    n_shifts=\$(grep -c '^[+-]' ${sample_id}.${params.aastat_workdir_suffix}/aa_statistics_table.csv 2>/dev/null || echo 0)
+    n_loc=\$(tail -n +2 ${sample_id}.${params.aastat_workdir_suffix}/localization_statistics.csv 2>/dev/null | wc -l || echo 0)
     printf '# id: aastat_stats\\n# plot_type: generalstats\\n# pconfig:\\n#   n_mass_shifts:\\n#     title: Mass Shifts\\n#   n_localizations:\\n#     title: Localized Shifts\\nSample\\tn_mass_shifts\\tn_localizations\\n${sample_id}\\t'\$n_shifts'\\t'\$n_loc'\\n' > ${sample_id}_aastat_mqc.tsv
 
     cat <<-END_VERSIONS > versions.yml

@@ -11,19 +11,13 @@ keywords:
   - mass shifts
 tools:
   - opensearch_summary:
-      description: Cross-tool summary script shipped with nf-core/opensearch.
+      description: Cross-tool summary script shipped with nf-core/opensearch; this module-local script is the single report implementation.
       homepage: https://github.com/animesh/opensearch
       documentation: https://github.com/animesh/opensearch
 input:
-  - fragpipe_dirs:
+  - result_dirs:
       type: directory
-      description: FragPipe result directories.
-  - casanovo_dirs:
-      type: directory
-      description: Casanovo result directories.
-  - aastat_dirs:
-      type: directory
-      description: AA_stat result directories.
+      description: FragPipe, Casanovo and AA_stat result directories.
 output:
   - mqc_json:
       type: file
