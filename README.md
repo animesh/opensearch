@@ -45,31 +45,35 @@ pip install AA_stat casanovo
 whereis AA_stat casanovo
 ```
 
-For a local run, (download nextflow)[https://get.nextflow.io] and use the custom configuration explicitly and omit `-resume` on the first run:
+For a local run
 
 ```bash
 curl -s https://get.nextflow.io | bash
-./nextflow run . -c conf/local.config     --input_dir "$PWD"     --raw_pattern '*.raw'     --scripts_dir "$PWD"     --fragpipe_bin /home/ash022/fragpipe/bin/fragpipe     --aa_stat_bin /home/ash022/.local/bin/AA_stat     --casanovo_bin /home/ash022/.local/bin/casanovo -resume
+./nextflow run . -c conf/local.config     --input_dir "$PWD"     --raw_pattern '*.raw'     --scripts_dir "$PWD"     --fragpipe_bin /home/ash022/fragpipe/bin/fragpipe     --aa_stat_bin /home/ash022/.local/bin/AA_stat     --casanovo_bin /home/ash022/.local/bin/casanovo
+
 
  N E X T F L O W   ~  version 26.04.6
 
-WARN: It appears you have never run this project before -- Option `-resume` is ignored
-Launching `./main.nf` [goofy_celsius] revision: f8a65f9409
+Launching `./main.nf` [angry_wozniak] revision: f8a65f9409
 
 executor >  local (11)
-[97/290332] NFC…OPENSEARCH:OPENSEARCH:FRAGPIPE (200313_SIRI_TK12_CTR2_20200323222228) [100%] 3 of 3 ✔
-[7e/58657f] NFC…OPENSEARCH:OPENSEARCH:CASANOVO (200313_SIRI_TK12_CTR2_20200323222228) [100%] 3 of 3 ✔
-[c9/9b04d1] NFC…_OPENSEARCH:OPENSEARCH:AA_STAT (200313_SIRI_TK12_CTR2_20200323222228) [100%] 3 of 3 ✔
-[2d/831c90] NFCORE_OPENSEARCH:OPENSEARCH:OPENSEARCH_SUMMARY (integrated summary)      [100%] 1 of 1 ✔
-[6a/5ed165] NFCORE_OPENSEARCH:OPENSEARCH:MULTIQC (multiqc)                            [100%] 1 of 1 ✔
+[f3/134302] NFC…I_TK12_CTR2_20200323222228) | 3 of 3 ✔
+[4a/086a61] NFC…I_TK12_CTR2_20200323222228) | 3 of 3 ✔
+[c1/07beda] NFC…I_TK12_CTR2_20200323222228) | 3 of 3 ✔
+[3f/c9a609] NFC…UMMARY (integrated summary) | 1 of 1 ✔
+[73/7773a8] NFC…PENSEARCH:MULTIQC (multiqc) | 1 of 1 ✔
 -[nf-core/opensearch] Pipeline completed successfully-
-Completed at: 19-Aug-2026 15:14:26
-Duration    : 51m 4s
-CPU hours   : 7.9
+Completed at: 19-Aug-2026 23:09:09
+Duration    : 51m 7s
+CPU hours   : 8.0
 Succeeded   : 11
 ```
 
 The workflow runs FragPipe first and can then run Casanovo (de novo sequencing) and AA_stat (mass-shift/modification profiling) from the calibrated `mzML` and FragPipe outputs. The final reporting layer combines the three analyses into an integrated OpenSearch summary and also preserves the original tool-specific reports and MultiQC output.
+
+The integrated report now keeps spectrum counts and identification counts distinct. For each sample it reports the total spectra and MS2 spectra from the calibrated mzML produced by FragPipe, unique spectra with target/non-contaminant FragPipe PSMs, total FragPipe PSM rows, Casanovo sequenced spectra, Casanovo spectra with score >=0.50, and the overlap between FragPipe PSM spectra and Casanovo score >=0.50 spectra. Casanovo is a de novo sequencer rather than a database-search PSM engine, so the report deliberately labels these as Casanovo sequences/spectra rather than PSMs. The Casanovo score-threshold counts are taken from its mzTab `search_engine_score[1]` field and cross-checked against the Casanovo log.
+
+The report has one authoritative MultiQC General Statistics table. The individual FragPipe/Casanovo/AA_stat `*_mqc.tsv` files remain published for debugging/backwards compatibility but are not passed to MultiQC, preventing the duplicated PSM/peptide/protein columns that appeared in earlier reports.
 
 The integrated report treats the three tools as complementary views of the same MS/MS data:
 
@@ -97,12 +101,14 @@ The report adds a cross-tool analysis layer rather than simply presenting three 
 
 It includes:
 
-1. **Executive sample comparison**
-   - FragPipe PSMs, unique peptides and proteins
-   - modified PSM percentage
-   - contaminant percentage
-   - missed-cleavage percentage
-   - Casanovo de novo yield and confidence when available
+1. **Single authoritative General Statistics table**
+   - total spectra and MS2 spectra from the calibrated mzML in new runs
+   - FragPipe PSMs, peptides and proteins
+   - FragPipe identification rate
+   - Casanovo sequences and sequence yield
+   - spectra identified by both tools
+   - modified PSM percentage, contaminant percentage and missed-cleavage percentage
+   - no duplicate FragPipe/Casanovo general-stat columns
 
 2. **Sample QC summary and flags**
    - compact run-level QC table
@@ -115,11 +121,14 @@ It includes:
    - percentage of PSMs carrying each modification
    - comparison across samples
 
-4. **Identification funnel**
-   - Casanovo sequences when available
-   - FragPipe PSMs
-   - unique peptides
-   - proteins
+4. **Spectrum Identification Overview**
+   - input spectra
+   - FragPipe PSM spectra
+   - Casanovo spectra
+   - spectra identified by both tools
+   - FragPipe-only and Casanovo-only spectra
+   - spectra receiving neither identification
+   - both/only categories are matched by scan number plus precursor charge
 
 5. **Casanovo confidence**
    - ≥0.00, ≥0.50, ≥0.90, ≥0.95 and ≥0.99 thresholds
@@ -365,7 +374,7 @@ By default, outputs are written under `--outdir` (default: `results`) in process
 - `results/fragpipe/`
 - `results/casanovo/` (if enabled and available)
 - `results/aa_stat/` (if enabled and available)
-- `results/pipeline_info/summary.tsv` and `results/pipeline_info/provenance.tsv` (integrated machine-readable summary)
+- `results/pipeline_info/summary.tsv` and `results/pipeline_info/provenance.tsv` (integrated machine-readable summary and provenance)
 - `results/multiqc/multiqc_report.html` (integrated MultiQC report)
 
 For FragPipe, each sample is published as a work directory named like:
@@ -376,7 +385,7 @@ For example, PTM-Shepherd summary tables are typically found at:
 
 - `results/fragpipe/20250909_CSF_13_b_Slot1-32_1_11095.FPv24/ptm-shepherd-output/global.modsummary.tsv`
 
-Note that FragPipe creates many nested files; calibrated mzML and pepXML outputs are also produced and then used by optional Casanovo and AA_stat steps.
+Note that FragPipe creates many nested files. Each published FragPipe directory now also contains `spectrum_count.tsv`, recording total spectra and MS2 spectra in the calibrated mzML used by the downstream tools. Older results without this file fall back to Casanovo's sequenced + skipped spectrum counts when Casanovo was run.
 
 For more details, please refer to the [output documentation](https://nf-co.re/opensearch/output).
 

@@ -39,6 +39,34 @@ process FRAGPIPE {
     psm_count=\$(tail -n +2 ${sample_id}.${params.fragpipe_workdir_suffix}/*/psm.tsv 2>/dev/null | wc -l || echo 0)
     pep_count=\$(tail -n +2 ${sample_id}.${params.fragpipe_workdir_suffix}/*/peptide.tsv 2>/dev/null | wc -l || echo 0)
     prot_count=\$(tail -n +2 ${sample_id}.${params.fragpipe_workdir_suffix}/*/protein.tsv 2>/dev/null | wc -l || echo 0)
+
+    # Count spectra in the actual calibrated mzML used by Casanovo/AA_stat.
+    # These are deliberately recorded inside the published FragPipe directory
+    # so the integrated report can distinguish input spectra from PSMs/IDs.
+    if [[ ! -s "${mzml_path}" ]]; then
+        echo "ERROR: FragPipe did not produce the expected calibrated mzML: ${mzml_path}" >&2
+        exit 1
+    fi
+    python3 - "${mzml_path}" "${sample_id}.${params.fragpipe_workdir_suffix}/spectrum_count.tsv" <<'PY_SPECTRA'
+import sys
+import xml.etree.ElementTree as ET
+
+mzml, out = sys.argv[1:3]
+total = 0
+ms2 = 0
+for event, elem in ET.iterparse(mzml, events=("end",)):
+    if elem.tag.rsplit("}", 1)[-1] != "spectrum":
+        continue
+    total += 1
+    for cv in elem.iter():
+        if cv.tag.rsplit("}", 1)[-1] == "cvParam" and cv.attrib.get("accession") == "MS:1000511" and cv.attrib.get("value") == "2":
+            ms2 += 1
+            break
+    elem.clear()
+with open(out, "w", encoding="utf-8") as fh:
+    fh.write("sample\ttotal_spectra\tms2_spectra\\n")
+    fh.write(f"${sample_id}\t{total}\t{ms2}\\n")
+PY_SPECTRA
     printf '# id: fragpipe_stats\n# plot_type: generalstats\n# pconfig:\n#   psm_count:\n#     title: PSMs\n#   peptide_count:\n#     title: Peptides\n#   protein_count:\n#     title: Proteins\nSample\tpsm_count\tpeptide_count\tprotein_count\n${sample_id}\t'\$psm_count'\t'\$pep_count'\t'\$prot_count'\n' > ${sample_id}_fragpipe_mqc.tsv
 
     cat <<-END_VERSIONS > versions.yml

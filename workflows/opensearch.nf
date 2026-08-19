@@ -15,7 +15,6 @@ workflow OPENSEARCH {
     ch_multiqc_files  = Channel.empty()
 
     FRAGPIPE(raw_ch, manifest_ch, workflow_ch)
-    ch_multiqc_files = ch_multiqc_files.mix(FRAGPIPE.out.mqc.map { it[1] })
     ch_versions = FRAGPIPE.out.versions
 
     // Coerce CLI-supplied flags to proper Groovy booleans.
@@ -35,14 +34,12 @@ workflow OPENSEARCH {
 
     if (run_casanovo && casanovo_available) {
         CASANOVO(FRAGPIPE.out.mzml)
-        ch_multiqc_files = ch_multiqc_files.mix(CASANOVO.out.mqc.map { it[1] })
         ch_versions = ch_versions.mix(CASANOVO.out.versions)
     }
 
     if (run_aa_stat && aa_stat_available) {
         aa_stat_input = FRAGPIPE.out.mzml.join(FRAGPIPE.out.pepxml, by: 0)
         AA_STAT(aa_stat_input)
-        ch_multiqc_files = ch_multiqc_files.mix(AA_STAT.out.mqc.map { it[1] })
         ch_versions = ch_versions.mix(AA_STAT.out.versions)
     }
 
