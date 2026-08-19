@@ -42,8 +42,14 @@ class TestOpenSearchSummary(unittest.TestCase):
             self.assertEqual(r.returncode, 0, r.stderr)
             summary = (root/'summary.tsv').read_text()
             self.assertIn('S1', summary)
-            self.assertIn('\t2\t2\t1\t100\t25.0\t5.0', summary)
+            self.assertIn('S1\t2\t2\t1\t0.0\t0.0\t0.0\t100\t25.0\t5.0', summary)
             self.assertTrue((root/'opensearch_sequence_overlap_mqc.json').exists())
+            self.assertTrue((root/'opensearch_provenance_mqc.json').exists())
+            self.assertTrue((root/'opensearch_source_reports_mqc.html').exists())
+            self.assertTrue((root/'provenance.tsv').exists())
+            html = (root/'opensearch_aastat_annotations_mqc.html').read_text()
+            self.assertIn('id: opensearch_aastat_annotations', html)
+            self.assertIn('section_name: AA_stat Mass-Shift Annotations', html)
 
 if __name__ == '__main__':
     unittest.main()

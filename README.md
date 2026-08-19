@@ -38,36 +38,34 @@ fragpipe-config.bin-diann=/home/ash022/fragpipe/tools/diann/1.8.2_beta_8/linux/d
 fragpipe-config.bin-python=/usr/bin/python3
 ```
 
-probably better to install optional tools as they can take in the `_calibrated.mzML` output from Fragpipe give a second opinion on mods like [AA_stat](https://pypi.org/project/AA-stat/) `pip install AA_stat` and [Casanovo](https://pypi.org/project/casanovo/) `pip install casanovo` which can run de-novo sequecing on the data, but need find there binaries `whereis AA_stat casanovo` and change following command-line accordingly to analyze `--input_dir`
+Install the optional tools because they provide complementary evidence from the calibrated `_calibrated.mzML` output produced by FragPipe:
+
+```bash
+pip install AA_stat casanovo
+whereis AA_stat casanovo
+```
+
+For a local run, (download nextflow)[https://get.nextflow.io] and use the custom configuration explicitly and omit `-resume` on the first run:
 
 ```bash
 curl -s https://get.nextflow.io | bash
-./nextflow run . --input_dir $PWD --raw_pattern '*.raw' --scripts_dir $PWD   --fragpipe_bin /home/ash022/fragpipe/bin/fragpipe   --aa_stat_bin /home/ash022/.local/bin/AA_stat   --casanovo_bin /home/ash022/.local/bin/casanovo  -resume
+./nextflow run . -c conf/local.config     --input_dir "$PWD"     --raw_pattern '*.raw'     --scripts_dir "$PWD"     --fragpipe_bin /home/ash022/fragpipe/bin/fragpipe     --aa_stat_bin /home/ash022/.local/bin/AA_stat     --casanovo_bin /home/ash022/.local/bin/casanovo -resume
 
  N E X T F L O W   ~  version 26.04.6
 
 WARN: It appears you have never run this project before -- Option `-resume` is ignored
-Launching `./main.nf` [cheeky_boltzmann] revision: f8a65f9409
+Launching `./main.nf` [goofy_celsius] revision: f8a65f9409
 
-WARN: [nf-core/opensearch] You are attempting to run the pipeline without any custom configuration!
-
-This will be dependent on your local compute environment but can be achieved via one or more of the following:
-   (1) Using an existing pipeline profile e.g. `-profile docker` or `-profile singularity`
-   (2) Using an existing nf-core/configs for your Institution e.g. `-profile crick` or `-profile uppmax`
-   (3) Using your own local custom config e.g. `-c /path/to/your/custom.config`
-
-Please refer to the quick start section and usage docs for the pipeline.
- 
 executor >  local (11)
-[1d/0df716] NFC…RCH:FRAGPIPE (200313_SIRI_TK12_CTR3_20200324013720) | 3 of 3 ✔
-[1b/06431f] NFC…RCH:CASANOVO (200313_SIRI_TK12_CTR3_20200324013720) | 3 of 3 ✔
-[cc/bb420d] NFC…ARCH:AA_STAT (200313_SIRI_TK12_CTR3_20200324013720) | 3 of 3 ✔
-[9c/0a89e3] NFC…:OPENSEARCH:OPENSEARCH_SUMMARY (integrated summary) | 1 of 1 ✔
-[5a/a05e99] NFCORE_OPENSEARCH:OPENSEARCH:MULTIQC (multiqc)          | 1 of 1 ✔
+[97/290332] NFC…OPENSEARCH:OPENSEARCH:FRAGPIPE (200313_SIRI_TK12_CTR2_20200323222228) [100%] 3 of 3 ✔
+[7e/58657f] NFC…OPENSEARCH:OPENSEARCH:CASANOVO (200313_SIRI_TK12_CTR2_20200323222228) [100%] 3 of 3 ✔
+[c9/9b04d1] NFC…_OPENSEARCH:OPENSEARCH:AA_STAT (200313_SIRI_TK12_CTR2_20200323222228) [100%] 3 of 3 ✔
+[2d/831c90] NFCORE_OPENSEARCH:OPENSEARCH:OPENSEARCH_SUMMARY (integrated summary)      [100%] 1 of 1 ✔
+[6a/5ed165] NFCORE_OPENSEARCH:OPENSEARCH:MULTIQC (multiqc)                            [100%] 1 of 1 ✔
 -[nf-core/opensearch] Pipeline completed successfully-
-Completed at: 19-Aug-2026 12:35:24
-Duration    : 51m 20s
-CPU hours   : 7.8
+Completed at: 19-Aug-2026 15:14:26
+Duration    : 51m 4s
+CPU hours   : 7.9
 Succeeded   : 11
 ```
 
@@ -161,6 +159,11 @@ It includes:
     - identification efficiency
     - de novo sequencing quality
     - prominent modification signals
+
+12. **Data provenance and source reports**
+    - every integrated metric is mapped to its originating program and source file
+    - `pipeline_info/provenance.tsv` provides the same mapping in machine-readable form
+    - the MultiQC report provides relative links to the published FragPipe, PTM-Shepherd, Casanovo and AA_stat source files/reports
 
 The report is intended to answer not only *how many identifications were obtained*, but also *what each analysis contributes beyond the others*. The detailed FragPipe, Casanovo and AA_stat reports remain available as the technical appendix.
 
@@ -362,7 +365,7 @@ By default, outputs are written under `--outdir` (default: `results`) in process
 - `results/fragpipe/`
 - `results/casanovo/` (if enabled and available)
 - `results/aa_stat/` (if enabled and available)
-- `results/pipeline_info/summary.tsv` (integrated machine-readable summary)
+- `results/pipeline_info/summary.tsv` and `results/pipeline_info/provenance.tsv` (integrated machine-readable summary)
 - `results/multiqc/multiqc_report.html` (integrated MultiQC report)
 
 For FragPipe, each sample is published as a work directory named like:

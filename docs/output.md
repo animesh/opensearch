@@ -23,7 +23,7 @@ The pipeline is built using [Nextflow](https://www.nextflow.io/) and processes d
 <summary>Output files</summary>
 
 - `fragpipe/`
-  - `<sample>.FPv24hum/`: FragPipe work directory for each sample
+  - `<sample>.FPv24/`: FragPipe work directory for each sample
   - `*_calibrated.mzML`: calibrated mzML files used by downstream tools
   - `*.pepXML`: peptide-spectrum match outputs used by AA_stat
 
@@ -37,7 +37,7 @@ FragPipe is executed in headless mode using user-provided workflow (`fp.dl.workf
 <summary>Output files</summary>
 
 - `casanovo/`
-  - `<sample>.DNv5p1p2/`: Casanovo predictions per sample (when `--run_casanovo true`)
+  - `<sample>.DN/`: Casanovo predictions per sample (when `--run_casanovo true`)
 
 </details>
 
@@ -49,11 +49,21 @@ Casanovo runs on FragPipe-generated calibrated mzML files.
 <summary>Output files</summary>
 
 - `aa_stat/`
-  - `<sample>.AA_stat_v2p5p6hum/`: AA_stat outputs per sample (when `--run_aa_stat true`)
+  - `<sample>.AA_statm/`: AA_stat outputs per sample (when `--run_aa_stat true`)
 
 </details>
 
 AA_stat uses paired calibrated mzML and pepXML outputs from FragPipe.
+
+### Integrated OpenSearch report
+
+The pipeline generates a single MultiQC report that integrates whichever of FragPipe, Casanovo and AA_stat were run. The report preserves the original tool-specific MultiQC modules and adds: PTM-Shepherd modification landscape, precursor charge distribution, missed-cleavage distribution, Casanovo confidence, Casanovo/FragPipe sequence overlap, AA_stat annotations, protein-level Jaccard reproducibility, sample QC flags, observations, and a data-provenance/source-report section.
+
+Every integrated metric is mapped to its source program and source file. The source links are relative to the published `results/multiqc/multiqc_report.html`.
+
+The machine-readable provenance table is: `pipeline_info/provenance.tsv`.
+
+The machine-readable integrated summary is: `pipeline_info/summary.tsv`.
 
 ### Pipeline information
 

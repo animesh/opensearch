@@ -1,3 +1,18 @@
+## [Unreleased]
+
+### Added
+
+- Provenance-aware integrated MultiQC reporting for FragPipe, PTM-Shepherd, Casanovo and AA_stat.
+- Direct source-file/report links and machine-readable `provenance.tsv`.
+- Local `run_local.sh` wrapper and `conf/local.config` to avoid first-run `-resume` and no-custom-config warnings.
+- Cleaner MultiQC custom-content ordering and disabled plot export to avoid non-fatal colour conversion warnings.
+
+### Fixed
+
+- AA_stat HTML custom-content metadata format.
+- AA_stat localized-bin terminology.
+- MultiQC ordering configuration that referred to custom sections as modules.
+
 # nf-core/opensearch: Changelog
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)

@@ -2,7 +2,7 @@ process OPENSEARCH_SUMMARY {
     tag 'integrated summary'
     label 'process_low'
 
-    publishDir "${params.outdir}/pipeline_info", mode: 'copy', pattern: 'summary.tsv'
+    publishDir "${params.outdir}/pipeline_info", mode: 'copy', pattern: '*.tsv'
 
     input:
     path result_dirs
@@ -11,6 +11,7 @@ process OPENSEARCH_SUMMARY {
     path '*_mqc.json', emit: mqc_json
     path '*_mqc.html', emit: mqc_html
     path 'summary.tsv', emit: summary
+    path 'provenance.tsv', emit: provenance
 
     script:
     """
