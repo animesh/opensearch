@@ -387,6 +387,44 @@ For example, PTM-Shepherd summary tables are typically found at:
 
 Note that FragPipe creates many nested files. Each published FragPipe directory now also contains `spectrum_count.tsv`, recording total spectra and MS2 spectra in the calibrated mzML used by the downstream tools. Older results without this file fall back to Casanovo's sequenced + skipped spectrum counts when Casanovo was run.
 
+The v3 implementation keeps that comparison, but makes it more specific:
+
+1. Spectrum level:
+   FragPipe target/non-contaminant PSM spectra
+   vs Casanovo score >= 0.50 spectra.
+
+2. Sequence level:
+   Casanovo score >= 0.50 amino-acid sequences
+   vs FragPipe stripped peptide sequences.
+
+3. I/L-equivalent sequence level:
+   same as above after treating I and L as equivalent.
+
+4. Modification-aware peptidoform level:
+   Casanovo ProForma
+   vs FragPipe Modified Peptide
+   with position-aware modification matching.
+
+Common modification names are mapped to masses and compared with a 0.05 Da
+tolerance. Unknown modifications are not guessed.
+
+5. Diagnostic category:
+   same amino-acid sequence but different reported modification state.
+
+## Test
+
+    python3 tests/test_peptide_harmonization.py
+
+## New MultiQC sections
+
+- OpenSearch Run Scorecard
+- Spectrum Identification Overview
+- Casanovo ↔ FragPipe Peptide Comparison
+- Modification Harmonization Diagnostics
+- AA_stat Cross-Sample Modification Comparison
+
+The existing sections are retained and improved.
+
 For more details, please refer to the [output documentation](https://nf-co.re/opensearch/output).
 
 ## Development
