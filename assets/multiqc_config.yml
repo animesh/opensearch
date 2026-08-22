@@ -13,6 +13,8 @@ custom_content:
     - missed_cleavage_distribution
     - opensearch_casanovo_confidence
     - casanovo_fragpipe_sequence_overlap
+    - casanovo_fragpipe_harmonized_peptide_comparison
+    - optional_tool_status
     - opensearch_aastat_annotations
     - protein_level_reproducibility
     - sample_qc_flags

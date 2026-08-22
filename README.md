@@ -1,8 +1,8 @@
 <h1>
-  <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="docs/images/nf-core-opensearch_logo_dark.png">
-    <img alt="nf-core/opensearch" src="docs/images/nf-core-opensearch_logo_light.png">
-  </picture>
+ <picture>
+ <source media="(prefers-color-scheme: dark)" srcset="docs/images/nf-core-opensearch_logo_dark.png">
+ <img alt="nf-core/opensearch" src="docs/images/nf-core-opensearch_logo_light.png">
+ </picture>
 </h1>
 
 [![Open in GitHub Codespaces](https://img.shields.io/badge/Open_In_GitHub_Codespaces-black?labelColor=grey&logo=github)](https://github.com/codespaces/new/nf-core/opensearch)
@@ -27,51 +27,62 @@ The workflow runs FragPipe first, then optionally runs Casanovo (de novo sequenc
 
 ### Quick start
 
-Install [Java](https://www.oracle.com/java/technologies/downloads/#java21), [Mono](https://www.mono-project.com/download/stable/), [Fragpipe](https://github.com/Nesvilab/FragPipe/releases#release-24.0), [MultiQC](https://docs.seqera.io/multiqc/getting_started/installation) 	
-`pip install multiqc` and configure [fp.dl.workflow.txt](fp.dl.workflow.txt) specifically folliowing variables, note that `database.db-path` above points to a fasta file containing decoys and contaminants generated with Fragpipe itself and tools are downloaded via its GUI as well
+For a local run using the custom configuration, we need to install [Java](https://www.oracle.com/java/technologies/downloads/#java21), [Mono](https://www.mono-project.com/download/stable/), [Fragpipe](https://github.com/Nesvilab/FragPipe/releases#release-24.0), [MultiQC](https://docs.seqera.io/multiqc/getting_started/installation) 	
+`pip install multiqc`. The repository includes `fp.dl.workflow.txt` as the canonical Open-search template for timsTOF. `--fragpipe_workflow` may point to another FragPipe workflow. The pipeline renders a per-sample workflow, overriding only environment paths and input-type-dependent settings, something like
 
 ```bash
-database.db-path=/home/ash022/fragpipe/2024-06-01-decoys-contam-UP000005640.fas
+curl -s https://get.nextflow.io | bash
+ ./nextflow run . -c conf/local.config --input_dir "$PWD" --raw_pattern '*.d' --fragpipe_database "/home/ash022/fragpipe/2024-06-01-decoys-contam-UP000005640.fas" --fragpipe_tools_folder "/home/ash022/fragpipe/tools" --fragpipe_diann "/home/ash022/fragpipe/tools/diann/1.8.2_beta_8/linux/diann-1.8.1.8" --fragpipe_python /usr/bin/python3 --fragpipe_bin "/home/ash022/fragpipe/bin/fragpipe" --aa_stat_bin "/home/ash022/.local/bin/AA_stat" --casanovo_bin "/home/ash022/.local/bin/casanovo" --cpus 20 --ram_gb 40 --max_concurrent 1 -resume
 
-fragpipe-config.tools-folder=/home/ash022/fragpipe/tools
-fragpipe-config.bin-diann=/home/ash022/fragpipe/tools/diann/1.8.2_beta_8/linux/diann-1.8.1.8
-fragpipe-config.bin-python=/usr/bin/python3
+ N E X T F L O W ~ version 26.04.6
+
+WARN: It appears you have never run this project before -- Option `-resume` is ignored
+Launching `./main.nf` [crazy_perlman] revision: 0181745a78
+
+executor > local (11)
+[bf/e6ded6] NFC…518_blank_Slot1-53_1_13743) | 3 of 3 ✔
+[cd/8ece5a] NFC…518_blank_Slot1-53_1_13743) | 3 of 3 ✔
+[8e/9c1a1d] NFC…518_blank_Slot1-53_1_13743) | 3 of 3 ✔
+[a8/7d27bf] NFC…UMMARY (integrated summary) | 1 of 1 ✔
+[2f/17b4b2] NFC…PENSEARCH:MULTIQC (multiqc) | 1 of 1 ✔
+-[nf-core/opensearch] Pipeline completed successfully-
+Completed at: 22-Aug-2026 10:43:30
+Duration : 20m 59s
+CPU hours : 7.0
+Succeeded : 11
 ```
 
-Install the optional tools because they provide complementary evidence from the calibrated `_calibrated.mzML` output produced by FragPipe:
+Install the optional tools because they provide complementary evidence from the analysis `_analysis.mzML` (calibrated when available) output produced by FragPipe:
 
 ```bash
 pip install AA_stat casanovo
 whereis AA_stat casanovo
 ```
+The workflow runs FragPipe first and can then run Casanovo (de novo sequencing) and AA_stat (mass-shift/modification profiling) from the analysis `mzML` and FragPipe outputs. The final reporting layer combines the three analyses into an integrated OpenSearch summary and also preserves the original tool-specific reports and MultiQC output.
 
-For a local run
+### Resource controls and failure isolation
+
+The heavy processes use shared command-line resource parameters. Defaults are **20 CPUs and 40 GB RAM per heavy-tool task**:
 
 ```bash
-curl -s https://get.nextflow.io | bash
-./nextflow run . -c conf/local.config     --input_dir "$PWD"     --raw_pattern '*.raw'     --scripts_dir "$PWD"     --fragpipe_bin /home/ash022/fragpipe/bin/fragpipe     --aa_stat_bin /home/ash022/.local/bin/AA_stat     --casanovo_bin /home/ash022/.local/bin/casanovo
-
-
- N E X T F L O W   ~  version 26.04.6
-
-Launching `./main.nf` [angry_wozniak] revision: f8a65f9409
-
-executor >  local (11)
-[f3/134302] NFC…I_TK12_CTR2_20200323222228) | 3 of 3 ✔
-[4a/086a61] NFC…I_TK12_CTR2_20200323222228) | 3 of 3 ✔
-[c1/07beda] NFC…I_TK12_CTR2_20200323222228) | 3 of 3 ✔
-[3f/c9a609] NFC…UMMARY (integrated summary) | 1 of 1 ✔
-[73/7773a8] NFC…PENSEARCH:MULTIQC (multiqc) | 1 of 1 ✔
--[nf-core/opensearch] Pipeline completed successfully-
-Completed at: 19-Aug-2026 23:09:09
-Duration    : 51m 7s
-CPU hours   : 8.0
-Succeeded   : 11
+./nextflow run . -c conf/local.config \
+ --input_dir "$PWD" \
+ --raw_pattern '*.raw' \
+ --fragpipe_workflow "$PWD/fp.dl.workflow.txt" \
+ --fragpipe_bin /home/ash022/fragpipe/bin/fragpipe \
+ --aa_stat_bin /home/ash022/.local/bin/AA_stat \
+ --casanovo_bin /home/ash022/.local/bin/casanovo \
+ --cpus 20 \
+ --ram_gb 40
 ```
 
-The workflow runs FragPipe first and can then run Casanovo (de novo sequencing) and AA_stat (mass-shift/modification profiling) from the calibrated `mzML` and FragPipe outputs. The final reporting layer combines the three analyses into an integrated OpenSearch summary and also preserves the original tool-specific reports and MultiQC output.
+`--cpus` controls the Nextflow CPU allocation, FragPipe `--threads`, and AA_stat worker count. `--ram_gb` controls the Nextflow memory allocation and FragPipe `--ram`. `--max_concurrent` limits the number of simultaneous heavy per-sample tasks.
 
-The integrated report now keeps spectrum counts and identification counts distinct. For each sample it reports the total spectra and MS2 spectra from the calibrated mzML produced by FragPipe, unique spectra with target/non-contaminant FragPipe PSMs, total FragPipe PSM rows, Casanovo sequenced spectra, Casanovo spectra with score >=0.50, and the overlap between FragPipe PSM spectra and Casanovo score >=0.50 spectra. Casanovo is a de novo sequencer rather than a database-search PSM engine, so the report deliberately labels these as Casanovo sequences/spectra rather than PSMs. The Casanovo score-threshold counts are taken from its mzTab `search_engine_score[1]` field and cross-checked against the Casanovo log.
+FragPipe is the primary analysis, but per-sample failures are isolated by default so one problematic run does not cancel the remaining samples. The integrated report records the exact FragPipe status and message. Casanovo and AA_stat are optional and failure-isolated: a failed AA_stat run records the exit code and reason, produces a visible warning, and does not prevent Casanovo or the integrated report from running. The same applies in the opposite direction. Spectrum counting is QC metadata only; failure to parse a analysis mzML cannot invalidate a successful FragPipe search.
+
+The report distinguishes unavailable total-spectrum counts from MS2-only fallback counts rather than relabeling an MS2 denominator as total spectra.
+
+The integrated report now keeps spectrum counts and identification counts distinct. For each sample it reports the total spectra and MS2 spectra from the analysis mzML produced by FragPipe, unique spectra with target/non-contaminant FragPipe PSMs, total FragPipe PSM rows, Casanovo sequenced spectra, Casanovo spectra with score >=0.50, and the overlap between FragPipe PSM spectra and Casanovo score >=0.50 spectra. Casanovo is a de novo sequencer rather than a database-search PSM engine, so the report deliberately labels these as Casanovo sequences/spectra rather than PSMs. The Casanovo score-threshold counts are taken from its mzTab `search_engine_score[1]` field and cross-checked against the Casanovo log.
 
 The report has one authoritative MultiQC General Statistics table. The individual FragPipe/Casanovo/AA_stat `*_mqc.tsv` files remain published for debugging/backwards compatibility but are not passed to MultiQC, preventing the duplicated PSM/peptide/protein columns that appeared in earlier reports.
 
@@ -82,17 +93,14 @@ The integrated report treats the three tools as complementary views of the same 
 - **AA_stat:** what unexplained precursor/peptide mass shifts and modification patterns are present?
 - **OpenSearch Summary:** what do these analyses collectively say about the dataset?
 
-NOTE: Casanovo needs GPU to be efficient, but it doesnt have to be the latest and greatest, RTX2070 via WSL is enough
-
-![RTX2070 on WSL](<images/Screenshot 2026-08-15 153254.png>)
-
+NOTE: Casanovo needs GPU to be efficient, but it doesnt have to be the latest and greatest, something like RTX2070 via WSL is enough!
 
 Default workflow steps:
 
 1. Discover raw inputs from a samplesheet or directory pattern(s)
 2. Run FragPipe in headless mode using the provided workflow and manifest templates
-3. Run Casanovo from generated calibrated `mzML` files (optional)
-4. Run AA_stat from generated calibrated `mzML` and `pepXML` files (optional)
+3. Run Casanovo from generated analysis `mzML` files (calibrated when available, otherwise uncalibrated) (optional)
+4. Run AA_stat from generated analysis `mzML` and `pepXML` files (optional)
 5. Produce standard nf-core pipeline metadata and reports
 
 ### Integrated report
@@ -102,77 +110,77 @@ The report adds a cross-tool analysis layer rather than simply presenting three 
 It includes:
 
 1. **Single authoritative General Statistics table**
-   - total spectra and MS2 spectra from the calibrated mzML in new runs
-   - FragPipe PSMs, peptides and proteins
-   - FragPipe identification rate
-   - Casanovo sequences and sequence yield
-   - spectra identified by both tools
-   - modified PSM percentage, contaminant percentage and missed-cleavage percentage
-   - no duplicate FragPipe/Casanovo general-stat columns
+ - total spectra and MS2 spectra from the analysis mzML in new runs
+ - FragPipe PSMs, peptides and proteins
+ - FragPipe identification rate
+ - Casanovo sequences and sequence yield
+ - spectra identified by both tools
+ - modified PSM percentage, contaminant percentage and missed-cleavage percentage
+ - no duplicate FragPipe/Casanovo general-stat columns
 
 2. **Sample QC summary and flags**
-   - compact run-level QC table
-   - low-identification and low-de-novo-yield flags
-   - contaminant and missed-cleavage warnings
-   - flags are descriptive heuristics, not hard acceptance criteria
+ - compact run-level QC table
+ - low-identification and low-de-novo-yield flags
+ - contaminant and missed-cleavage warnings
+ - flags are descriptive heuristics, not hard acceptance criteria
 
 3. **PTM-Shepherd modification landscape**
-   - top modifications from `global.modsummary.tsv`
-   - percentage of PSMs carrying each modification
-   - comparison across samples
+ - top modifications from `global.modsummary.tsv`
+ - percentage of PSMs carrying each modification
+ - comparison across samples
 
 4. **Spectrum Identification Overview**
-   - input spectra
-   - FragPipe PSM spectra
-   - Casanovo spectra
-   - spectra identified by both tools
-   - FragPipe-only and Casanovo-only spectra
-   - spectra receiving neither identification
-   - both/only categories are matched by scan number plus precursor charge
+ - input spectra
+ - FragPipe PSM spectra
+ - Casanovo spectra
+ - spectra identified by both tools
+ - FragPipe-only and Casanovo-only spectra
+ - spectra receiving neither identification
+ - both/only categories are matched by scan number plus precursor charge
 
 5. **Casanovo confidence**
-   - ≥0.00, ≥0.50, ≥0.90, ≥0.95 and ≥0.99 thresholds
-   - percentage of sequenced spectra at each threshold
-   - fallback to the number of PSM rows in the mzTab if the log does not report the total
+ - ≥0.00, ≥0.50, ≥0.90, ≥0.95 and ≥0.99 thresholds
+ - percentage of sequenced spectra at each threshold
+ - fallback to the number of PSM rows in the mzTab if the log does not report the total
 
 6. **Casanovo ↔ FragPipe sequence overlap**
-   - exact overlap of unmodified peptide sequences
-   - Casanovo-only candidate sequences
-   - overlap percentage
+ - exact overlap of unmodified peptide sequences
+ - Casanovo-only candidate sequences
+ - overlap percentage
 
-   Casanovo-only sequences are deliberately described as *Casanovo-only candidates*, not automatically as novel peptides.
+ Casanovo-only sequences are deliberately described as *Casanovo-only candidates*, not automatically as novel peptides.
 
 7. **AA_stat mass-shift landscape and annotations**
-   - observed mass shifts
-   - peptide counts
-   - AA_stat annotations
-   - reported Unimod match percentages and links where available
-   - isotope shifts are distinguished from other shifts
+ - observed mass shifts
+ - peptide counts
+ - AA_stat annotations
+ - reported Unimod match percentages and links where available
+ - isotope shifts are distinguished from other shifts
 
 8. **Precursor charge distribution**
-   - PSM counts by precursor charge state
-   - useful as an MS2 quality and acquisition-consistency indicator
+ - PSM counts by precursor charge state
+ - useful as an MS2 quality and acquisition-consistency indicator
 
 9. **Missed-cleavage distribution**
-   - PSM counts by number of missed cleavages
-   - overall missed-cleavage percentage in the general statistics
+ - PSM counts by number of missed cleavages
+ - overall missed-cleavage percentage in the general statistics
 
 10. **Protein-level reproducibility**
-    - pairwise shared protein counts
-    - union size
-    - Jaccard similarity between samples
-    - decoys and contaminants excluded from this comparison
+ - pairwise shared protein counts
+ - union size
+ - Jaccard similarity between samples
+ - decoys and contaminants excluded from this comparison
 
 11. **Automatic observations**
-    - run-to-run differences
-    - identification efficiency
-    - de novo sequencing quality
-    - prominent modification signals
+ - run-to-run differences
+ - identification efficiency
+ - de novo sequencing quality
+ - prominent modification signals
 
 12. **Data provenance and source reports**
-    - every integrated metric is mapped to its originating program and source file
-    - `pipeline_info/provenance.tsv` provides the same mapping in machine-readable form
-    - the MultiQC report provides relative links to the published FragPipe, PTM-Shepherd, Casanovo and AA_stat source files/reports
+ - every integrated metric is mapped to its originating program and source file
+ - `pipeline_info/provenance.tsv` provides the same mapping in machine-readable form
+ - the MultiQC report provides relative links to the published FragPipe, PTM-Shepherd, Casanovo and AA_stat source files/reports
 
 The report is intended to answer not only *how many identifications were obtained*, but also *what each analysis contributes beyond the others*. The detailed FragPipe, Casanovo and AA_stat reports remain available as the technical appendix.
 
@@ -182,22 +190,22 @@ The reporting flow is:
 
 ```text
 RAW / .d
-   |
-   +--------------------+
-   |                    |
-FragPipe             calibrated mzML
-   |                    |
-   |             +------+------+
-   |             |             |
-   |          Casanovo       AA_stat
-   |             |             |
-   +-------------+-------------+
-                 |
-        OpenSearch Summary
-                 |
-              MultiQC
-                 |
-        multiqc_report.html
+ |
+ +--------------------+
+ | |
+FragPipe analysis mzML
+ | |
+ | +------+------+
+ | | |
+ | Casanovo AA_stat
+ | | |
+ +-------------+-------------+
+ |
+ OpenSearch Summary
+ |
+ MultiQC
+ |
+ multiqc_report.html
 ```
 
 The integrated summary is implemented as a pipeline-specific MultiQC custom-content layer. This keeps the standard MultiQC modules intact while adding the OpenSearch interpretation layer.
@@ -228,52 +236,51 @@ Now, you can run the pipeline using:
 
 ```bash
 nextflow run nf-core/opensearch \
-   -profile <docker/singularity/.../institute> \
-  --input samplesheet.csv \
-  --scripts_dir <DIR_WITH_fp.manifest.txt_AND_fp.dl.workflow.txt> \
-  --outdir <OUTDIR>
+ -profile <docker/singularity/.../institute> \
+ --input samplesheet.csv \
+ --fragpipe_workflow <PATH_TO_FRAGPIPE_WORKFLOW> \
+ --outdir <OUTDIR>
 ```
 
 Directory mode:
 
 ```bash
 nextflow run nf-core/opensearch \
-  -profile <docker/singularity/.../institute> \
-  --input_dir /path/to/raw_inputs \
-  --raw_pattern '*.raw,*.d' \
-  --scripts_dir <DIR_WITH_fp.manifest.txt_AND_fp.dl.workflow.txt> \
-   --outdir <OUTDIR>
+ -profile <docker/singularity/.../institute> \
+ --input_dir /path/to/raw_inputs \
+ --raw_pattern '*.raw,*.d' \
+ --fragpipe_workflow <PATH_TO_FRAGPIPE_WORKFLOW> \
+ --outdir <OUTDIR>
 ```
 
 Orbitrap example:
 
 ```bash
 nextflow run nf-core/opensearch \
-  --input_dir /path/to/orbitrap_raws \
-  --raw_pattern '*.raw' \
-  --scripts_dir /path/to/scripts \
-  --outdir results
+ --input_dir /path/to/orbitrap_raws \
+ --raw_pattern '*.raw' \
+ --fragpipe_workflow "$PWD/fp.dl.workflow.txt" \
+ --outdir results
 ```
 
 timsTOF example:
 
 ```bash
 nextflow run nf-core/opensearch \
-  --input_dir /path/to/timstof_runs \
-  --raw_pattern '*.d' \
-  --scripts_dir /path/to/scripts \
-  --outdir results
+ --input_dir /path/to/timstof_runs \
+ --raw_pattern '*.d' \
+ --fragpipe_workflow "$PWD/fp.dl.workflow.txt" \
+ --outdir results
 ```
 
-If you prefer explicit file paths instead of `--scripts_dir`, use:
+Provide the FragPipe workflow directly:
 
-- `--fragpipe_manifest /path/to/fp.manifest.txt`
-- `--fragpipe_workflow /path/to/fp.dl.workflow.txt`
+- `--fragpipe_workflow /path/to/FragPipe.workflow`
 
 ### Important parameters
 
-- `--scripts_dir`: recommended way to provide FragPipe templates. Must contain `fp.manifest.txt` and `fp.dl.workflow.txt`.
-- `--fragpipe_manifest` and `--fragpipe_workflow`: explicit alternative to `--scripts_dir`.
+- `--fragpipe_workflow`: optional path to a FragPipe workflow. The default is the repository `fp.dl.workflow.txt`.
+- The manifest is generated automatically for every staged raw input. No manifest template is required.
 - `--fragpipe_bin`: optional override if FragPipe is not in the default location.
 - `--run_casanovo` and `--run_aa_stat`: optional downstream steps. If binaries are missing, these steps are skipped with warnings.
 
@@ -285,8 +292,11 @@ Pipeline parameter defaults (`nextflow.config`):
 - `raw_pattern: *.d,*.raw,*.RAW,*.mzML,*.mzml`
 - `run_casanovo: true`
 - `run_aa_stat: true`
-- `fragpipe_threads: 8`
-- `fragpipe_ram_gb: 32`
+- `cpus: 20`
+- `ram_gb: 40`
+- `max_concurrent: 1`
+- `fragpipe_allow_partial: true`
+- `fragpipe_stage_mode: symlink`
 - `fragpipe_bin: $FRAGPIPE_BIN or $HOME/fragpipe/bin/fragpipe`
 - `aa_stat_bin: $AA_STAT_BIN or $HOME/.local/bin/AA_stat`
 - `casanovo_bin: $CASANOVO_BIN or $HOME/.local/bin/casanovo`
@@ -297,30 +307,27 @@ Pipeline parameter defaults (`nextflow.config`):
 Default process resources (`conf/base.config`):
 
 - `process_low`: `2 CPUs`, `8 GB`
-- `process_medium`: `4 CPUs`, `32 GB`
-- `process_high`: `8 CPUs`, `32 GB`
+- `process_medium`: `cpus`, `ram_gb`
+- `process_high`: `cpus`, `ram_gb`
 
 Default publish behavior (`conf/modules.config`):
 
 - Outputs are copied to `results/<process_name>/` (lowercase process name)
 - `versions.yml` is not copied to output process folders
 
-FragPipe template defaults in the repository (`fp.dl.workflow.txt`):
+### FragPipe workflow and manifest
+
+The repository includes `fp.dl.workflow.txt`; a custom workflow can be supplied with `--fragpipe_workflow`. For each sample, OpenSearch generates a four-column, tab-separated manifest from the staged input: LC-MS path, Experiment, Bioreplicate, and data type. The Bioreplicate field is blank because each FragPipe task processes one file as one experiment.
+
+The generated workflow preserves the supplied FragPipe search settings and overrides only environment/input-dependent settings. For timsTOF `.d` input it sets IM-MS mode and disables Crystal-C because Crystal-C currently does not support `.d`; for regular MS it sets Regular-MS mode. It also enables calibrated mzML writing so downstream tools have a standard spectrum file when calibration succeeds:
 
 ```text
-database.db-path=/root/fragpipe/2024-06-01-decoys-contam-UP000005640.fas
-fragpipe-config.tools-folder=/root/fragpipe/tools
-fragpipe-config.bin-diann=/root/fragpipe/tools/diann/1.8.2_beta_8/linux/diann-1.8.1.8
-fragpipe-config.bin-python=/usr/bin/python3
+database.db-path=<--fragpipe_database>
+fragpipe-config.tools-folder=<--fragpipe_tools_folder>
+fragpipe-config.bin-diann=<--fragpipe_diann>
+fragpipe-config.bin-python=<--fragpipe_python>
+crystalc.run-crystalc=<--fragpipe_crystalc>
 ```
-
-FragPipe manifest template default (`fp.manifest.txt`):
-
-```text
-RAWDIR  RAWFILE  DDA
-```
-
-These FragPipe template values are not automatically discovered from your system. Update them for your environment, then pass them via `--scripts_dir` (or explicit `--fragpipe_manifest` + `--fragpipe_workflow`).
 
 ### Monitoring progress
 
@@ -347,12 +354,12 @@ Useful optional Nextflow reports:
 
 ```bash
 nextflow run nf-core/opensearch \
-  --input_dir /path/to/raw_inputs \
-  --scripts_dir /path/to/scripts \
-  -with-report \
-  -with-trace \
-  -with-timeline \
-  -with-dag flowchart.png
+ --input_dir /path/to/raw_inputs \
+ --fragpipe_workflow "$PWD/fp.dl.workflow.txt" \
+ -with-report \
+ -with-trace \
+ -with-timeline \
+ -with-dag flowchart.png
 ```
 
 ### Runtime notes
@@ -385,45 +392,7 @@ For example, PTM-Shepherd summary tables are typically found at:
 
 - `results/fragpipe/20250909_CSF_13_b_Slot1-32_1_11095.FPv24/ptm-shepherd-output/global.modsummary.tsv`
 
-Note that FragPipe creates many nested files. Each published FragPipe directory now also contains `spectrum_count.tsv`, recording total spectra and MS2 spectra in the calibrated mzML used by the downstream tools. Older results without this file fall back to Casanovo's sequenced + skipped spectrum counts when Casanovo was run.
-
-The v3 implementation keeps that comparison, but makes it more specific:
-
-1. Spectrum level:
-   FragPipe target/non-contaminant PSM spectra
-   vs Casanovo score >= 0.50 spectra.
-
-2. Sequence level:
-   Casanovo score >= 0.50 amino-acid sequences
-   vs FragPipe stripped peptide sequences.
-
-3. I/L-equivalent sequence level:
-   same as above after treating I and L as equivalent.
-
-4. Modification-aware peptidoform level:
-   Casanovo ProForma
-   vs FragPipe Modified Peptide
-   with position-aware modification matching.
-
-Common modification names are mapped to masses and compared with a 0.05 Da
-tolerance. Unknown modifications are not guessed.
-
-5. Diagnostic category:
-   same amino-acid sequence but different reported modification state.
-
-## Test
-
-    python3 tests/test_peptide_harmonization.py
-
-## New MultiQC sections
-
-- OpenSearch Run Scorecard
-- Spectrum Identification Overview
-- Casanovo ↔ FragPipe Peptide Comparison
-- Modification Harmonization Diagnostics
-- AA_stat Cross-Sample Modification Comparison
-
-The existing sections are retained and improved.
+Note that FragPipe creates many nested files. Each published FragPipe directory now also contains `spectrum_count.tsv`, recording total spectra and MS2 spectra in the analysis mzML used by the downstream tools. Older results without this file fall back to Casanovo's sequenced + skipped spectrum counts when Casanovo was run.
 
 For more details, please refer to the [output documentation](https://nf-co.re/opensearch/output).
 
@@ -452,7 +421,7 @@ For further information or help, don't hesitate to get in touch on the [Slack `#
 
 [opensearch](https://github.com/animesh/opensearch) is created with great help from [github-copilot](https://github.com/copilot)
 
-Please don't forget to cite what `opensearch` is really based upon, [Fragpipe](https://github.com/Nesvilab/FragPipe), [AA_stat](https://github.com/SimpleNumber/aa_stat), and  [Casanovo](https://github.com/Noble-Lab/casanovo)!
+Please don't forget to cite what `opensearch` is really based upon, [Fragpipe](https://github.com/Nesvilab/FragPipe), [AA_stat](https://github.com/SimpleNumber/aa_stat), and [Casanovo](https://github.com/Noble-Lab/casanovo)!
 
 An extensive list of references for the tools used by the pipeline can be found in the [`CITATIONS.md`](CITATIONS.md) file.
 

@@ -8,7 +8,7 @@
 
 This pipeline is designed for open-search proteomics workflows using FragPipe as the primary engine, with optional Casanovo and AA_stat downstream steps.
 
-You must provide FragPipe template files either via `--scripts_dir` or by explicitly setting both `--fragpipe_manifest` and `--fragpipe_workflow`.
+A FragPipe workflow is supplied by default as the repository `fp.dl.workflow.txt`; you can replace it with `--fragpipe_workflow`. The pipeline generates the four-column FragPipe manifest automatically for each input.
 
 ## Input modes
 
@@ -55,7 +55,7 @@ The typical command for running the pipeline with a samplesheet is as follows:
 nextflow run nf-core/opensearch \
   -profile docker \
   --input ./samplesheet.csv \
-  --scripts_dir /path/to/scripts \
+  --fragpipe_workflow "$PWD/fp.dl.workflow.txt" \
   --outdir ./results
 ```
 
@@ -66,16 +66,11 @@ nextflow run nf-core/opensearch \
   -profile docker \
   --input_dir /path/to/raw_inputs \
   --raw_pattern '*.raw' \
-  --scripts_dir /path/to/scripts \
+  --fragpipe_workflow "$PWD/fp.dl.workflow.txt" \
   --outdir ./results
 ```
 
-If not using `--scripts_dir`, provide both:
-
-```bash
---fragpipe_manifest /path/to/fp.manifest.txt
---fragpipe_workflow /path/to/fp.dl.workflow.txt
-```
+Provide the FragPipe workflow directly with `--fragpipe_workflow`. The pipeline generates the four-column manifest automatically; no `fp.manifest.txt` is required.
 
 This will launch the pipeline with the `docker` configuration profile. See below for more information about profiles.
 

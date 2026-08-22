@@ -12,6 +12,8 @@ process OPENSEARCH_SUMMARY {
     path '*_mqc.html', emit: mqc_html
     path 'summary.tsv', emit: summary
     path 'provenance.tsv', emit: provenance
+    path 'peptide_comparison.tsv', emit: peptide_comparison, optional: true
+    path 'peptide_comparison_summary.tsv', emit: peptide_comparison_summary, optional: true
 
     script:
     """

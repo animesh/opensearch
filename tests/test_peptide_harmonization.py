@@ -1,37 +1,28 @@
-#!/usr/bin/env python3
-import importlib.util
+import sys
 from pathlib import Path
 
-SCRIPT = Path(__file__).resolve().parents[1] / "bin" / "opensearch_summary.py"
-spec = importlib.util.spec_from_file_location("osv3", SCRIPT)
-m = importlib.util.module_from_spec(spec)
-spec.loader.exec_module(m)
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "bin"))
 
-def assert_equal(a, b):
-    assert a == b, (a, b)
+from peptide_harmonization import mods_equal, normalize_sequence, parse_casanovo_mods, parse_fragpipe_mods
 
-# FragPipe integer-mass notation vs Casanovo named ProForma.
-fseq, fmods = m.parse_modified_peptide("M[16]PEPTC[57]IDE")
-cseq, cmods = m.parse_proforma("M[Oxidation]PEPTC[Carbamidomethyl]IDE")
-assert_equal(fseq, cseq)
-assert m.mods_match(fmods, cmods), (fmods, cmods)
 
-# N-terminal modification.
-fseq, fmods = m.parse_modified_peptide("[42]PEPTIDE")
-cseq, cmods = m.parse_proforma("[Acetyl]-PEPTIDE")
-assert_equal(fseq, cseq)
-assert m.mods_match(fmods, cmods), (fmods, cmods)
+def test_sequence_normalization():
+    assert normalize_sequence("M[147]PEP") == "MPEP"
+    assert normalize_sequence("M[147]PEPI", True) == "MPEPL"
 
-# Sequence-only comparison ignores modifications.
-assert_equal(m.strip_modifications("M[16]PEPTIDE"), "MPEPTIDE")
-assert_equal(m.strip_modifications("M[Oxidation]PEPTIDE"), "MPEPTIDE")
 
-# I/L-equivalent comparison.
-assert_equal(m.il_key("PEPTIDEIL"), m.il_key("PEPTIDELI"))
+def test_fragpipe_and_casanovo_common_modifications_match():
+    fp = parse_fragpipe_mods("MPEP", "1M(15.9949)")
+    cas = parse_casanovo_mods("1-Oxidation (M):UNIMOD:35", "M[Oxidation]PEP", "MPEP")
+    assert mods_equal(fp, cas, tolerance=0.05)
 
-# Different modification should remain different peptidoforms.
-a = m.peptidoform_key("PEPTIDE", ((3, ("m", 16.0)),))
-b = m.peptidoform_key("PEPTIDE", ((3, ("m", 15.0)),))
-assert a != b
 
-print("All OpenSearch v3 peptide harmonization tests passed.")
+def test_nterm_acetyl_matches():
+    fp = parse_fragpipe_mods("PEPTIDE", "N-term(42.0106)")
+    cas = parse_casanovo_mods("0-Acetyl (N-term):UNIMOD:1", "[Acetyl]-PEPTIDE", "PEPTIDE")
+    assert mods_equal(fp, cas, tolerance=0.05)
+
+
+def test_unknown_modification_is_not_guessed():
+    cas = parse_casanovo_mods("3-Something (K):UNIMOD:999999", "PEK[Something]T", "PEKT")
+    assert isinstance(cas[0][1], str)

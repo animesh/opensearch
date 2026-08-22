@@ -4,7 +4,7 @@
 
 This document describes the output produced by the pipeline. Most of the plots are taken from the MultiQC report, which summarises results at the end of the pipeline.
 
-The directories listed below will be created in the results directory after the pipeline has finished. All paths are relative to the top-level results directory.
+The directories listed below will be created in the results directory after the pipeline has finished. Optional-tool failures are recorded in each optional tool's `status.tsv` and do not invalidate other analyses. All paths are relative to the top-level results directory.
 
 <!-- TODO nf-core: Write this documentation describing your workflow's output -->
 
@@ -13,8 +13,8 @@ The directories listed below will be created in the results directory after the 
 The pipeline is built using [Nextflow](https://www.nextflow.io/) and processes data using the following steps:
 
 - [FragPipe](#fragpipe) - Primary open-search processing
-- [Casanovo](#casanovo) - Optional de novo sequencing from calibrated mzML
-- [AA_stat](#aa_stat) - Optional modification profiling from calibrated mzML and pepXML
+- [Casanovo](#casanovo) - Optional de novo sequencing from analysis mzML (calibrated when available)
+- [AA_stat](#aa_stat) - Optional modification profiling from analysis mzML (calibrated when available) and pepXML
 - [Pipeline information](#pipeline-information) - Report metrics generated during workflow execution
 
 ### FragPipe
@@ -24,12 +24,14 @@ The pipeline is built using [Nextflow](https://www.nextflow.io/) and processes d
 
 - `fragpipe/`
   - `<sample>.FPv24/`: FragPipe work directory for each sample
-  - `*_calibrated.mzML`: calibrated mzML files used by downstream tools
+  - `<sample>.FPv24/spectrum_count.tsv`: analysis mzML (calibrated when available) total/MS2 spectrum count when available
+  - `<sample>.FPv24/status.tsv`: authoritative per-sample FragPipe status and tool exit code; partial failures are retained when enabled
+  - `<sample>_analysis.mzML`: analysis mzML (calibrated when available) files used by downstream tools
   - `*.pepXML`: peptide-spectrum match outputs used by AA_stat
 
 </details>
 
-FragPipe is executed in headless mode using user-provided workflow (`fp.dl.workflow.txt`) and manifest template (`fp.manifest.txt`) files.
+FragPipe is executed in headless mode using the supplied workflow template, rendered per sample for the actual input type. The manifest is generated automatically for each staged input and is not stored as a repository template.
 
 ### Casanovo
 
@@ -38,10 +40,11 @@ FragPipe is executed in headless mode using user-provided workflow (`fp.dl.workf
 
 - `casanovo/`
   - `<sample>.DN/`: Casanovo predictions per sample (when `--run_casanovo true`)
+  - `status.tsv`: `SUCCESS` or `FAILED`, exit code and reason
 
 </details>
 
-Casanovo runs on FragPipe-generated calibrated mzML files.
+Casanovo runs on FragPipe-generated analysis mzML (calibrated when available) files.
 
 ### AA_stat
 
@@ -50,10 +53,11 @@ Casanovo runs on FragPipe-generated calibrated mzML files.
 
 - `aa_stat/`
   - `<sample>.AA_statm/`: AA_stat outputs per sample (when `--run_aa_stat true`)
+  - `status.tsv`: `SUCCESS` or `FAILED`, exit code and reason
 
 </details>
 
-AA_stat uses paired calibrated mzML and pepXML outputs from FragPipe.
+AA_stat uses paired analysis mzML (calibrated when available) and pepXML outputs from FragPipe.
 
 ### Integrated OpenSearch report
 
@@ -82,7 +86,7 @@ The machine-readable integrated summary is: `pipeline_info/summary.tsv`.
 
 ## Integrated OpenSearch report
 
-The pipeline adds an integrated MultiQC layer from whichever analysis outputs are available. The single report implementation lives in `modules/local/opensearch_summary/bin/opensearch_summary.py`; `bin/opensearch_summary.py` is only a thin command-line wrapper. The report uses MultiQC custom-content files.
+The pipeline adds an integrated MultiQC layer from whichever analysis outputs are available. The report implementation is maintained in `bin/opensearch_summary.py` and mirrored under `modules/local/opensearch_summary/bin/` for Nextflow module execution. The report uses MultiQC custom-content files.
 
 The integrated report contains:
 
@@ -91,7 +95,10 @@ The integrated report contains:
 - Precursor charge-state distribution and missed-cleavage distribution from FragPipe `psm.tsv`.
 - Identification funnel comparing Casanovo sequences with FragPipe PSMs, peptides and proteins.
 - Casanovo confidence thresholds read directly from the Casanovo log, with mzTab PSM-row fallback for total spectra.
-- Exact sequence overlap between unique Casanovo sequences and FragPipe peptide sequences after removing Casanovo modification annotations.
+- Exact sequence overlap between all unique Casanovo sequences and FragPipe peptide sequences, plus the same metric restricted to Casanovo score >=0.50 predictions.
+- Same-spectrum comparison using scan number + precursor charge.
+- Position-aware peptidoform comparison after normalizing common modifications to monoisotopic masses within 0.05 Da; unknown modifications are not guessed.
+- Explicit categories for same sequence with modification disagreement and different sequence predictions.
 - AA_stat mass-shift annotations with reported Unimod match percentages and links.
 - Pairwise protein overlap and Jaccard similarity between samples, excluding decoys and contaminants.
 - Sample QC flags and automatically generated descriptive observations.

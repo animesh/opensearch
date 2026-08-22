@@ -1,9 +1,10 @@
 process CASANOVO {
+    errorStrategy 'ignore'
     tag "${sample_id}"
-    label 'process_medium'
+    label 'process_high'
 
     input:
-    tuple val(sample_id), val(mzml_file)
+    tuple val(sample_id), path(mzml_file)
 
     output:
     tuple val(sample_id), path("${sample_id}.${params.casanovo_workdir_suffix}"), emit: casanovo_dir
@@ -11,21 +12,79 @@ process CASANOVO {
     path "versions.yml", emit: versions
 
     script:
+    def casanovo_dir = "${sample_id}.${params.casanovo_workdir_suffix}"
+    def mzml_name = mzml_file.getName()
+
     """
-    ${params.casanovo_bin} sequence ${mzml_file} --output_dir ${sample_id}.${params.casanovo_workdir_suffix}
+    set -euo pipefail
 
-    log_file=\$(ls ${sample_id}.${params.casanovo_workdir_suffix}/casanovo_*.log | head -1)
-    sequenced=\$(grep -oP 'Sequenced \\K[0-9]+' "\$log_file" || echo 0)
-    score00=\$(grep -oP '([0-9]+) spectra \\(.*?\\) scored ≥ 0\\.00' "\$log_file" | grep -oP '^[0-9]+' || echo 0)
-    score50=\$(grep -oP '([0-9]+) spectra \\(.*?\\) scored ≥ 0\\.50' "\$log_file" | grep -oP '^[0-9]+' || echo 0)
-    score90=\$(grep -oP '([0-9]+) spectra \\(.*?\\) scored ≥ 0\\.90' "\$log_file" | grep -oP '^[0-9]+' || echo 0)
-    score95=\$(grep -oP '([0-9]+) spectra \\(.*?\\) scored ≥ 0\\.95' "\$log_file" | grep -oP '^[0-9]+' || echo 0)
-    score99=\$(grep -oP '([0-9]+) spectra \\(.*?\\) scored ≥ 0\\.99' "\$log_file" | grep -oP '^[0-9]+' || echo 0)
-    printf '# id: casanovo_stats\\n# plot_type: generalstats\\n# pconfig:\\n#   sequenced_spectra:\\n#     title: Sequenced\\n#   score_ge_50pct:\\n#     title: "Score>=0.5"\\n#   score_ge_90pct:\\n#     title: "Score>=0.9"\\nSample\\tsequenced_spectra\\tscore_ge_50pct\\tscore_ge_90pct\\n${sample_id}\\t'\$sequenced'\\t'\$score50'\\t'\$score90'\\n' > ${sample_id}_casanovo_mqc.tsv
+    mkdir -p "${casanovo_dir}"
 
-    cat <<-END_VERSIONS > versions.yml
-    "${task.process}":
-        casanovo: \$(${params.casanovo_bin} --version 2>&1 | grep -oP '[0-9]+\\.[0-9]+\\.[0-9]+' | head -1 || echo unknown)
-    END_VERSIONS
+    CASANOVO_VERSION=\$(${params.casanovo_bin} --version 2>&1 | grep -oP '[0-9]+\\.[0-9]+\\.[0-9]+' | head -1 || true)
+    CASANOVO_VERSION=\${CASANOVO_VERSION:-unknown}
+
+    echo "[OpenSearch] Running Casanovo for ${sample_id} using the default model"
+    echo "[OpenSearch] Input: ${mzml_name}"
+    echo "[OpenSearch] Output: ${casanovo_dir}"
+
+    rc=0
+    set +e
+
+    ${params.casanovo_bin} sequence \
+        "${mzml_name}" \
+        --output_dir "${casanovo_dir}"
+
+    rc=\$?
+    set -e
+
+    status="SUCCESS"
+    message="Casanovo completed successfully using the default model"
+
+    if [[ \$rc -ne 0 ]]; then
+        status="FAILED"
+        message="Casanovo exited with code \$rc; see the Casanovo log."
+        echo "WARNING: ${sample_id}: \$message" >&2
+    fi
+
+    mztab_file=\$(find "${casanovo_dir}" \
+        -maxdepth 1 \
+        -type f \
+        -name '*.mztab' \
+        -size +0c \
+        -print -quit)
+
+    if [[ "\$status" == "SUCCESS" && -z "\$mztab_file" ]]; then
+        status="FAILED"
+        message="Casanovo returned success but produced no usable mzTab result."
+        echo "WARNING: ${sample_id}: \$message" >&2
+    fi
+
+    printf 'sample\\ttool\\tstatus\\texit_code\\tmessage\\n' > status.tsv
+    printf '%s\\tCasanovo\\t%s\\t%s\\t%s\\n' \
+        "${sample_id}" "\$status" "\$rc" "\$message" >> status.tsv
+
+    sequenced=0
+    score50=0
+    score90=0
+
+    printf '# id: casanovo_stats
+# plot_type: generalstats
+# pconfig:
+#   sequenced_spectra:
+#     title: Sequenced
+#   score_ge_50pct:
+#     title: "Score>=0.5"
+#   score_ge_90pct:
+#     title: "Score>=0.9"
+Sample\\tsequenced_spectra\\tscore_ge_50pct\\tscore_ge_90pct
+${sample_id}\\t\$sequenced\\t\$score50\\t\$score90
+' > "${sample_id}_casanovo_mqc.tsv"
+
+    cat > versions.yml <<EOF
+"${task.process}":
+    casanovo: \$CASANOVO_VERSION
+EOF
+
+    exit 0
     """
 }
