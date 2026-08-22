@@ -13,8 +13,8 @@ The directories listed below will be created in the results directory after the 
 The pipeline is built using [Nextflow](https://www.nextflow.io/) and processes data using the following steps:
 
 - [FragPipe](#fragpipe) - Primary open-search processing
-- [Casanovo](#casanovo) - Optional de novo sequencing from analysis mzML (calibrated when available)
-- [AA_stat](#aa_stat) - Optional modification profiling from analysis mzML (calibrated when available) and pepXML
+- [Casanovo](#casanovo) - Optional de novo sequencing from FragPipe-generated calibrated mzML
+- [AA_stat](#aa_stat) - Optional modification profiling from FragPipe-generated calibrated mzML and pepXML
 - [Pipeline information](#pipeline-information) - Report metrics generated during workflow execution
 
 ### FragPipe
@@ -24,9 +24,9 @@ The pipeline is built using [Nextflow](https://www.nextflow.io/) and processes d
 
 - `fragpipe/`
   - `<sample>.FPv24/`: FragPipe work directory for each sample
-  - `<sample>.FPv24/spectrum_count.tsv`: analysis mzML (calibrated when available) total/MS2 spectrum count when available
+  - `<sample>.FPv24/spectrum_count.tsv`: FragPipe-generated calibrated mzML total/MS2 spectrum count when available
   - `<sample>.FPv24/status.tsv`: authoritative per-sample FragPipe status and tool exit code; partial failures are retained when enabled
-  - `<sample>_analysis.mzML`: analysis mzML (calibrated when available) files used by downstream tools
+  - `<sample>_calibrated.mzML`: FragPipe-generated calibrated mzML files used by downstream tools
   - `*.pepXML`: peptide-spectrum match outputs used by AA_stat
 
 </details>
@@ -44,7 +44,7 @@ FragPipe is executed in headless mode using the supplied workflow template, rend
 
 </details>
 
-Casanovo runs on FragPipe-generated analysis mzML (calibrated when available) files.
+Casanovo runs on FragPipe-generated FragPipe-generated calibrated mzML files.
 
 ### AA_stat
 
@@ -57,7 +57,7 @@ Casanovo runs on FragPipe-generated analysis mzML (calibrated when available) fi
 
 </details>
 
-AA_stat uses paired analysis mzML (calibrated when available) and pepXML outputs from FragPipe.
+AA_stat uses paired FragPipe-generated calibrated mzML and pepXML outputs from FragPipe.
 
 ### Integrated OpenSearch report
 

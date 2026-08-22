@@ -411,7 +411,7 @@ def main():
         "peptide": {"title": "Peptides", "format": "{:,.0f}"},
         "protein": {"title": "Proteins", "format": "{:,.0f}"},
     }
-    if cas:
+    if cas_all:
         headers.update({
             "casanovo": {"title": "Casanovo sequenced", "format": "{:,.0f}"},
             "casanovo_id_pct": {"title": "Casanovo sequenced %", "suffix": "%", "format": "{:.1f}"},
@@ -430,29 +430,17 @@ def main():
         "plot_type": "generalstats", "headers": headers, "data": summary,
     })
 
-    # One explicit execution-status table. FragPipe is the primary analysis;
-    # Casanovo and AA_stat are independent optional analyses. A successful
-    # optional tool must never be read as evidence that FragPipe succeeded.
+    # Optional-tool execution status. A failed optional tool is visible but does not
+    # invalidate FragPipe or the other optional analyses.
     tool_status = {}
     for sample in samples:
         tool_status[sample] = {}
-        fp_st = str((frag.get(sample, {}).get("status") or {}).get("status", "NOT_RUN")).upper()
-        cas_st = str((cas_all.get(sample, {}).get("status") or {}).get("status", "NOT_RUN")).upper()
-        aa_st = str((aa_all.get(sample, {}).get("status") or {}).get("status", "NOT_RUN")).upper()
-        tool_status[sample]["FragPipe (primary)"] = fp_st
-        tool_status[sample]["Casanovo"] = cas_st
-        tool_status[sample]["AA_stat"] = aa_st
-        if fp_st in {"FAILED", "PARTIAL"}:
-            overall = f"FRAGPIPE {fp_st}"
-        elif "FAILED" in {cas_st, aa_st}:
-            overall = "PASS + OPTIONAL FAILURE"
-        elif fp_st == "SUCCESS":
-            overall = "PASS"
-        else:
-            overall = "INCOMPLETE"
-        tool_status[sample]["Overall"] = overall
+        for tool, source in (("FragPipe spectrum QC", frag.get(sample)), ("Casanovo", cas_all.get(sample)), ("AA_stat", aa_all.get(sample))):
+            if source and source.get("status"):
+                st = source["status"]
+                tool_status[sample][tool] = f"{st.get('status', 'UNKNOWN')}: {st.get('message', '')}".strip()
     if any(tool_status[s] for s in tool_status):
-        mqc_table("opensearch_tool_status_mqc.json", "Analysis Status", "Primary and optional tool execution status. FragPipe is the primary analysis. Casanovo and AA_stat are independent optional analyses and do not imply FragPipe success.", tool_status)
+        mqc_table("opensearch_tool_status_mqc.json", "Optional Tool Status", "Execution status of optional downstream tools. FAILED means the tool was attempted but did not produce a usable result; the remaining workflow continues.", tool_status)
 
     # Harmonized peptide comparison at the spectrum level. This is deliberately
     # based on the same experimental spectrum (scan + precursor charge), then
@@ -557,14 +545,11 @@ def main():
 
     flags = classify(summary)
     qc = {s: {"Status": flags[s], "Total spectra": v["total_spectra"] if v["total_spectra"] is not None else "NA", "MS2 spectra": v["ms2_spectra"] if v["ms2_spectra"] is not None else "NA", "Spectrum count source": v.get("spectrum_count_source", "Unknown"),
-              "FragPipe status": v.get("fragpipe_status", "UNKNOWN"),
-              "Casanovo status": v.get("casanovo_status", "NOT_RUN"),
-              "AA_stat status": v.get("aa_stat_status", "NOT_RUN"),
-              "FragPipe PSM spectra": v["fragpipe_psm_spectra"], "FragPipe PSM rows": v["psm"],
+              "FragPipe status": v.get("fragpipe_status", "UNKNOWN"), "FragPipe PSM spectra": v["fragpipe_psm_spectra"], "FragPipe PSM rows": v["psm"],
               "FragPipe ID %": round(v["fragpipe_id_pct"], 1),
               "Modified PSMs %": round(v["modified_psm_pct"], 1), "Contaminant PSMs %": round(v["contaminant_psm_pct"], 2),
               "Missed cleavage %": round(v["missed_cleavage_pct"], 1),
-              **({"Casanovo sequenced": v["casanovo"], "Casanovo ≥0.5": v["casanovo_q50"], "Casanovo ≥0.5 %": round(v["casanovo_q50_pct"], 1), "Casanovo sequenced %": round(v["casanovo_id_pct"], 1)} if s in cas else {})} for s, v in summary.items()}
+              **({"Casanovo status": v.get("casanovo_status", "NOT_RUN"), "Casanovo sequenced": v["casanovo"], "Casanovo ≥0.5": v["casanovo_q50"], "Casanovo ≥0.5 %": round(v["casanovo_q50_pct"], 1), "Casanovo sequenced %": round(v["casanovo_id_pct"], 1)} if s in cas_all else {"Casanovo status": v.get("casanovo_status", "NOT_RUN")})} for s, v in summary.items()}
     mqc_table("opensearch_qc_flags_mqc.json", "Sample QC Flags", "Descriptive heuristic flags for relative run review; not acceptance criteria.", qc)
 
     # Provenance includes the input-spectrum denominator and the spectrum-overlap calculation.
@@ -594,8 +579,7 @@ def main():
         if s in frag:
             f = frag[s]
             count_file = first(f["directory"], "spectrum_count.tsv")
-            status_file = first(f["directory"], "status.tsv")
-            for path, label in ((status_file, "status.tsv"), (f["psm_file"], "psm.tsv"), (f["peptide_file"], "peptide.tsv"), (f["protein_file"], "protein.tsv"), (f["mod_file"], "PTM-Shepherd global.modsummary.tsv"), (count_file, "spectrum_count.tsv")):
+            for path, label in ((f["psm_file"], "psm.tsv"), (f["peptide_file"], "peptide.tsv"), (f["protein_file"], "protein.tsv"), (f["mod_file"], "PTM-Shepherd global.modsummary.tsv"), (count_file, "spectrum_count.tsv")):
                 if path: source_rows.append(f'<tr><td>{html.escape(s)}</td><td>FragPipe</td><td>{link(relative_source("FragPipe", f["directory"], path), label)}</td></tr>')
     mqc_table("opensearch_provenance_mqc.json", "OpenSearch Data Provenance", "Every integrated metric is derived from one of the source files listed below.", {str(i + 1): r for i, r in enumerate(prov)})
     if source_rows:

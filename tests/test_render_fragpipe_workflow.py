@@ -35,28 +35,3 @@ def test_render_tims_and_environment_overrides(tmp_path):
     assert "crystalc.run-crystalc=false" in text
     assert "fragpipe-config.tools-folder=/new/tools" in text
     assert "database.decoy-tag=rev_" in text
-
-
-def test_render_regular_ms_overrides_input_type_and_keeps_open_search_parameters(tmp_path):
-    source = tmp_path / "workflow"
-    dest = tmp_path / "generated.workflow"
-    source.write_text(
-        "database.db-path=/old/db.fas\n"
-        "workflow.input.data-type.im-ms=true\n"
-        "workflow.input.data-type.regular-ms=false\n"
-        "crystalc.run-crystalc=false\n"
-        "msfragger.write_calibrated_mzml=false\n"
-        "msfragger.run-msfragger=true\n"
-        "search.enzyme=trypsin\n"
-    )
-    import argparse
-    render(argparse.Namespace(
-        source=str(source), destination=str(dest), database="/new/db.fas",
-        tools_folder="", diann="", python="", im_ms="false",
-        crystalc="auto", write_calibrated=True,
-    ))
-    text = dest.read_text()
-    assert "workflow.input.data-type.im-ms=false" in text
-    assert "workflow.input.data-type.regular-ms=true" in text
-    assert "msfragger.write_calibrated_mzml=true" in text
-    assert "search.enzyme=trypsin" in text

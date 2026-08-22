@@ -34,40 +34,16 @@ workflow NFCORE_OPENSEARCH {
 
     main:
 
-    // FragPipe inputs are intentionally flexible for backwards compatibility.
-    // Preferred: --fragpipe_workflow <file>.
-    // Compatibility: --scripts_dir <dir> containing fp.dl.workflow.txt.
-    // The manifest is generated per sample inside FRAGPIPE, so a static
-    // fp.manifest.txt is not required by this pipeline.
-    def workflow_path = params.fragpipe_workflow?.toString()
-    if (params.scripts_dir) {
-        def scripts_workflow = file("${params.scripts_dir}/fp.dl.workflow.txt")
-        if (!scripts_workflow.exists()) {
-            error "FragPipe workflow not found in --scripts_dir: ${scripts_workflow}"
-        }
-        workflow_path = scripts_workflow.toString()
+    if (!params.fragpipe_workflow) {
+        error "Please provide --fragpipe_workflow <FragPipe workflow file>, for example \$HOME/fragpipe/workflows/Open.workflow"
+
     }
 
-    if (!workflow_path) {
-        workflow_path = "${projectDir}/fp.dl.workflow.txt"
-    }
+    workflow_ch = Channel.fromPath(params.fragpipe_workflow, checkIfExists: true).first()
 
-    def workflow_file = file(workflow_path)
-    if (!workflow_file.exists()) {
-        error "FragPipe workflow does not exist: ${workflow_file}"
-    }
-
-    // Keep the old CLI flags accepted without requiring a manifest.
-    // FRAGPIPE creates the correct task-local four-column manifest itself.
-    if (params.fragpipe_manifest) {
-        def manifest_file = file(params.fragpipe_manifest.toString())
-        if (!manifest_file.exists()) {
-            error "FragPipe manifest does not exist: ${manifest_file}"
-        }
-    }
-
-    workflow_ch = Channel.value(workflow_file)
-
+    //
+    // WORKFLOW: Run pipeline
+    //
     OPENSEARCH (
         samplesheet,
         workflow_ch,
