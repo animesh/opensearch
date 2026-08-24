@@ -27,36 +27,35 @@ The workflow runs FragPipe first, then optionally runs Casanovo (de novo sequenc
 
 ### Quick start
 
-For a local run using the custom configuration, we need to install [Java](https://www.oracle.com/java/technologies/downloads/#java21), [Mono](https://www.mono-project.com/download/stable/), [Fragpipe](https://github.com/Nesvilab/FragPipe/releases#release-24.0), [MultiQC](https://docs.seqera.io/multiqc/getting_started/installation) 	
-`pip install multiqc`. The repository includes `fp.dl.workflow.txt` as the canonical Open-search template for timsTOF. `--fragpipe_workflow` may point to another FragPipe workflow. The pipeline renders a per-sample workflow, overriding only environment paths and input-type-dependent settings, something like
-
-```bash
-curl -s https://get.nextflow.io | bash
- ./nextflow run . -c conf/local.config --input_dir "$PWD" --raw_pattern '*.d' --fragpipe_database "/home/ash022/fragpipe/2024-06-01-decoys-contam-UP000005640.fas" --fragpipe_tools_folder "/home/ash022/fragpipe/tools" --fragpipe_diann "/home/ash022/fragpipe/tools/diann/1.8.2_beta_8/linux/diann-1.8.1.8" --fragpipe_python /usr/bin/python3 --fragpipe_bin "/home/ash022/fragpipe/bin/fragpipe" --aa_stat_bin "/home/ash022/.local/bin/AA_stat" --casanovo_bin "/home/ash022/.local/bin/casanovo" --cpus 20 --ram_gb 40 --max_concurrent 1 -resume
-
- N E X T F L O W ~ version 26.04.6
-
-WARN: It appears you have never run this project before -- Option `-resume` is ignored
-Launching `./main.nf` [crazy_perlman] revision: 0181745a78
-
-executor > local (11)
-[bf/e6ded6] NFC…518_blank_Slot1-53_1_13743) | 3 of 3 ✔
-[cd/8ece5a] NFC…518_blank_Slot1-53_1_13743) | 3 of 3 ✔
-[8e/9c1a1d] NFC…518_blank_Slot1-53_1_13743) | 3 of 3 ✔
-[a8/7d27bf] NFC…UMMARY (integrated summary) | 1 of 1 ✔
-[2f/17b4b2] NFC…PENSEARCH:MULTIQC (multiqc) | 1 of 1 ✔
--[nf-core/opensearch] Pipeline completed successfully-
-Completed at: 22-Aug-2026 10:43:30
-Duration : 20m 59s
-CPU hours : 7.0
-Succeeded : 11
-```
-
-Install the optional tools because they provide complementary evidence from the FragPipe-generated `_calibrated.mzML` output produced by FragPipe:
+Install [Java](https://www.oracle.com/java/technologies/downloads/#java21), [Mono](https://www.mono-project.com/download/stable/), [Fragpipe](https://github.com/Nesvilab/FragPipe/releases#release-24.0), [MultiQC](https://docs.seqera.io/multiqc/getting_started/installation) 	
+`pip install multiqc`. The repository includes `fp.dl.workflow.txt` as the canonical Open-search template for timsTOF. `--fragpipe_workflow` may point to another FragPipe workflow. The pipeline renders a per-sample workflow, overriding only environment paths and input-type-dependent settings. Install the optional tools because they provide complementary evidence from the FragPipe-generated `_calibrated.mzML` output produced by FragPipe:
 
 ```bash
 pip install AA_stat casanovo
 whereis AA_stat casanovo
+```
+
+For a local run, use `conf/local.config` a custom configuration and provide fasta-database/tool paths, something like
+
+```bash
+ ./nextflow run . -c conf/local.config --input_dir /mnt/f/tk/MSTK/ --raw_pattern '*TK12_CTR?_*.raw' --fragpipe_workflow fp.dl.workflow.txt --fragpipe_bin /root/fragpipe24v/bin/fragpipe --fragpipe_database /root/fragpipe24v/2024-06-01-decoys-contam-UP000005640.fas --fragpipe_tools_folder /root/fragpipe24v/tools --fragpipe_diann /root/fragpipe24v/tools/diann/1.8.2_beta_8/linux/diann-1.8.1.8 --fragpipe_python /usr/bin/python3 --fragpipe_crystalc false --aa_stat_bin /root/miniforge3/bin/AA_stat --casanovo_bin /root/miniforge3/bin/casanovo --cpus 12 --ram_gb 36 --max_concurrent 1 -resume
+
+ N E X T F L O W   ~  version 26.04.6
+
+Launching `./main.nf` [soggy_sanger] revision: 91d87110a1
+
+executor >  local (5)
+[9b/99cd48] NFC…PENSEARCH:OPENSEARCH:FRAGPIPE (200313_SIRI_TK12_CTR2_20200323222228) [100%] 3 of 3, cached: 2 ✔
+[85/6ec35a] NFC…PENSEARCH:OPENSEARCH:CASANOVO (200313_SIRI_TK12_CTR2_20200323222228) [100%] 3 of 3, cached: 2 ✔
+[e1/3739f7] NFC…OPENSEARCH:OPENSEARCH:AA_STAT (200313_SIRI_TK12_CTR2_20200323222228) [100%] 3 of 3, cached: 2 ✔
+[ab/dfbfdb] NFCORE_OPENSEARCH:OPENSEARCH:OPENSEARCH_SUMMARY (integrated summary)     [100%] 1 of 1 ✔
+[a3/cdb429] NFCORE_OPENSEARCH:OPENSEARCH:MULTIQC (multiqc)                           [100%] 1 of 1 ✔
+-[nf-core/opensearch] Pipeline completed successfully-
+Completed at: 24-Aug-2026 14:10:02
+Duration    : 20m 13s
+CPU hours   : 14.0 (71.3% cached)
+Succeeded   : 5
+Cached      : 6
 ```
 
 The workflow runs FragPipe first and can then run Casanovo (de novo sequencing) and AA_stat (mass-shift/modification profiling) from the calibrated `mzML` and FragPipe outputs. The final reporting layer combines the three analyses into an integrated OpenSearch summary and also preserves the original tool-specific reports and MultiQC output.
@@ -94,7 +93,10 @@ The integrated report treats the three tools as complementary views of the same 
 - **AA_stat:** what unexplained precursor/peptide mass shifts and modification patterns are present?
 - **OpenSearch Summary:** what do these analyses collectively say about the dataset?
 
-NOTE: Casanovo needs GPU to be efficient, but it doesnt have to be the latest and greatest, RTX2070 via WSL is enough!
+NOTE: Casanovo needs GPU to be efficient, but it doesnt have to be the latest and greatest, RTX2070 via WSL is enough
+
+![RTX2070 on WSL](<images/Screenshot 2026-08-15 153254.png>)
+
 
 Default workflow steps:
 
@@ -297,14 +299,14 @@ Pipeline parameter defaults (`nextflow.config`):
 - `ram_gb: 40`
 - `max_concurrent: 1`
 - `Casanovo model: installed default`
-- `fragpipe_allow_partial: true`
 - `FragPipe input staging: copy`
-- `fragpipe_bin: $FRAGPIPE_BIN or $HOME/fragpipe/bin/fragpipe`
-- `aa_stat_bin: $AA_STAT_BIN or $HOME/.local/bin/AA_stat`
-- `casanovo_bin: $CASANOVO_BIN or $HOME/.local/bin/casanovo`
-- `fragpipe_workdir_suffix: FPv24`
-- `casanovo_workdir_suffix: DN`
-- `aastat_workdir_suffix: AA_statm`
+- `fragpipe_bin: $FRAGPIPE_BIN`
+- `aa_stat_bin: $AA_STAT_BIN`
+- `casanovo_bin: $CASANOVO_BIN`
+- `fragpipe_database: $FRAGPIPE_DATABASE`
+- `fragpipe_tools_folder: $FRAGPIPE_TOOLS_FOLDER`
+- `fragpipe_diann: $FRAGPIPE_DIANN`
+- Tool output directory names are derived from the executable basenames.
 
 Default process resources (`conf/base.config`):
 
@@ -314,14 +316,15 @@ Default process resources (`conf/base.config`):
 
 Default publish behavior (`conf/modules.config`):
 
-- Outputs are copied to `results/<process_name>/` (lowercase process name)
+- Tool outputs are copied to directories named from the executable paths, e.g. `results/fragpipe`, `results/casanovo`, and `results/AA_stat`.
+- The integrated MultiQC report is copied to `results/multiqc/`.
 - `versions.yml` is not copied to output process folders
 
 ### FragPipe workflow and manifest
 
-The repository includes `fp.dl.workflow.txt`; a custom workflow can be supplied with `--fragpipe_workflow`. For each sample, OpenSearch generates a four-column, tab-separated manifest from the staged input: LC-MS path, Experiment, Bioreplicate, and data type. The Bioreplicate field is blank because each FragPipe task processes one file as one experiment.
+The repository includes `fp.dl.workflow.txt`; a custom workflow can be supplied with `--fragpipe_workflow`. For each sample, OpenSearch copies the complete raw file/directory into the pipeline launch directory and generates a four-column, tab-separated FragPipe manifest from that known absolute path: LC-MS path, Experiment, Bioreplicate, and data type. The Bioreplicate field is blank because each FragPipe task processes one file as one experiment.
 
-The generated workflow preserves the supplied FragPipe search settings and overrides only environment/input-dependent settings. For timsTOF `.d` input it sets IM-MS mode and disables Crystal-C because Crystal-C currently does not support `.d`; for regular MS it sets Regular-MS mode. It also enables calibrated mzML writing so downstream tools have a standard spectrum file when calibration succeeds:
+The generated workflow preserves the supplied FragPipe search settings and overrides only environment/input-dependent settings. The calibrated mzML path is deterministic: `<launch-directory>/<raw-stem>_calibrated.mzML`; no filesystem search is used. For timsTOF `.d` input it sets IM-MS mode and disables Crystal-C because Crystal-C currently does not support `.d`; for regular MS it sets Regular-MS mode. It also enables calibrated mzML writing so downstream tools have a standard spectrum file when calibration succeeds:
 
 ```text
 database.db-path=<--fragpipe_database>
@@ -366,8 +369,8 @@ nextflow run nf-core/opensearch \
 
 ### Runtime notes
 
-- FragPipe inputs are staged into the task work directory before execution. This is intentional and helps avoid reader issues with mounted source paths.
-- Casanovo starts only when a calibrated `mzML` exists; AA_stat starts only when both calibrated `mzML` and pepXML exist. Each receives the absolute task-local path via `realpath`.
+- Each raw `.raw` file or `.d` directory is copied into the pipeline launch directory before FragPipe is run.
+- Casanovo receives the known absolute `<raw-stem>_calibrated.mzML` path directly as a value. AA_stat receives the same calibrated mzML plus the FragPipe pepXML.
 - If FragPipe fails for a sample, the pipeline retains any usable artifacts and records the real exit code in that sample's `status.tsv`; other samples continue.
 - For detailed process debugging, inspect `.command.sh`, `.command.out`, `.command.err`, and `.command.log` inside the relevant `work/` directory.
 
@@ -380,19 +383,19 @@ For more details and further functionality, please refer to the [usage documenta
 
 By default, outputs are written under `--outdir` (default: `results`) in process-specific subfolders:
 
-- `results/fragpipe/`
-- `results/casanovo/` (if enabled and available)
-- `results/aa_stat/` (if enabled and available)
+- `results/<FragPipe executable name>/`
+- `results/<Casanovo executable name>/` (if enabled and available)
+- `results/<AA_stat executable name>/` (if enabled and available)
 - `results/pipeline_info/summary.tsv` and `results/pipeline_info/provenance.tsv` (integrated machine-readable summary and provenance)
 - `results/multiqc/multiqc_report.html` (integrated MultiQC report)
 
 For FragPipe, each sample is published as a work directory named like:
 
-- `results/fragpipe/<sample>.FPv24/`
+- `results/<FragPipe executable name>/<sample>.<FragPipe executable name>/`
 
 For example, PTM-Shepherd summary tables are typically found at:
 
-- `results/fragpipe/20250909_CSF_13_b_Slot1-32_1_11095.FPv24/ptm-shepherd-output/global.modsummary.tsv`
+- `results/<FragPipe executable name>/<sample>.<FragPipe executable name>/ptm-shepherd-output/global.modsummary.tsv`
 
 Note that FragPipe creates many nested files. Each published FragPipe directory now also contains `spectrum_count.tsv`, recording total spectra and MS2 spectra in the calibrated mzML used by the downstream tools. Older results without this file fall back to Casanovo's sequenced + skipped spectrum counts when Casanovo was run.
 

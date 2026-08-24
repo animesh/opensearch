@@ -8,7 +8,7 @@
 
 This pipeline is designed for open-search proteomics workflows using FragPipe as the primary engine, with optional Casanovo and AA_stat downstream steps.
 
-A FragPipe workflow is supplied by default as the repository `fp.dl.workflow.txt`; you can replace it with `--fragpipe_workflow`. The pipeline generates the four-column FragPipe manifest automatically for each input.
+A FragPipe workflow is supplied by default as the repository `fp.dl.workflow.txt`; you can replace it with `--fragpipe_workflow`. The pipeline copies each input into the pipeline launch directory, generates the four-column FragPipe manifest using that absolute copied path, and runs FragPipe from the copied input. FragPipe-generated `_calibrated.mzML` files are passed to Casanovo and AA_stat by absolute path.
 
 ## Input modes
 
@@ -31,11 +31,11 @@ sample_timstof,/data/timstof/20260513_TO123.d
 | Column    | Description                                                                                                                                                                            |
 | --------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `ID` | Sample identifier used for process tagging and output naming. |
-| `raw-file-name` | Full path to a raw mass spectrometry input, either an Orbitrap raw file (for example `.raw`) or a timsTOF directory (for example `.d`). |
+| `raw-file-name` | Full path to a raw mass spectrometry input, either an Orbitrap raw file (for example `.raw`) or a timsTOF directory (for example `.d`). The input is copied into the pipeline launch directory before FragPipe is run. |
 
 ### Directory mode (`--input_dir`)
 
-Provide a parent directory and optional filename glob patterns.
+Provide a parent directory and optional filename glob patterns. Each matched input is copied into the pipeline launch directory before FragPipe is run.
 
 ```bash
 --input_dir /path/to/raw_inputs --raw_pattern '*.raw,*.d'
@@ -70,7 +70,7 @@ nextflow run nf-core/opensearch \
   --outdir ./results
 ```
 
-Provide the FragPipe workflow directly with `--fragpipe_workflow`. The pipeline generates the four-column manifest automatically; no `fp.manifest.txt` is required.
+Provide the FragPipe workflow directly with `--fragpipe_workflow`. The pipeline generates the four-column manifest automatically from the copied absolute input path; no `fp.manifest.txt` is required. Casanovo is run without `--model`, so its installed default model is used for both Orbitrap and timsTOF.
 
 This will launch the pipeline with the `docker` configuration profile. See below for more information about profiles.
 

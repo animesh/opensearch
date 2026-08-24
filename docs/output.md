@@ -22,10 +22,10 @@ The pipeline is built using [Nextflow](https://www.nextflow.io/) and processes d
 <details markdown="1">
 <summary>Output files</summary>
 
-- `fragpipe/`
-  - `<sample>.FPv24/`: FragPipe work directory for each sample
-  - `<sample>.FPv24/spectrum_count.tsv`: FragPipe-generated calibrated mzML total/MS2 spectrum count when available
-  - `<sample>.FPv24/status.tsv`: authoritative per-sample FragPipe status and tool exit code; partial failures are retained when enabled
+- `fragpipe/` (named from the FragPipe executable path)
+  - `<sample>.<fragpipe-executable-name>/`: FragPipe work directory for each sample
+  - `<sample>.<fragpipe-executable-name>/spectrum_count.tsv`: FragPipe-generated calibrated mzML total/MS2 spectrum count when available
+  - `<sample>.<fragpipe-executable-name>/status.tsv`: authoritative per-sample FragPipe status and tool exit code; partial failures are retained when enabled
   - `<sample>_calibrated.mzML`: FragPipe-generated calibrated mzML files used by downstream tools
   - `*.pepXML`: peptide-spectrum match outputs used by AA_stat
 
@@ -38,21 +38,21 @@ FragPipe is executed in headless mode using the supplied workflow template, rend
 <details markdown="1">
 <summary>Output files</summary>
 
-- `casanovo/`
-  - `<sample>.DN/`: Casanovo predictions per sample (when `--run_casanovo true`)
+- `casanovo/` (named from the Casanovo executable path)
+  - `<sample>.<casanovo-executable-name>/`: Casanovo predictions per sample (when `--run_casanovo true`)
   - `status.tsv`: `SUCCESS` or `FAILED`, exit code and reason
 
 </details>
 
-Casanovo runs on FragPipe-generated FragPipe-generated calibrated mzML files.
+Casanovo runs on the absolute path of the calibrated mzML created beside the copied input. The default Casanovo model is used; no instrument-specific `--model` is supplied.
 
 ### AA_stat
 
 <details markdown="1">
 <summary>Output files</summary>
 
-- `aa_stat/`
-  - `<sample>.AA_statm/`: AA_stat outputs per sample (when `--run_aa_stat true`)
+- `AA_stat/` (named from the AA_stat executable path)
+  - `<sample>.<aa-stat-executable-name>/`: AA_stat outputs per sample (when `--run_aa_stat true`)
   - `status.tsv`: `SUCCESS` or `FAILED`, exit code and reason
 
 </details>
@@ -63,7 +63,7 @@ AA_stat uses paired FragPipe-generated calibrated mzML and pepXML outputs from F
 
 The pipeline generates a single MultiQC report that integrates whichever of FragPipe, Casanovo and AA_stat were run. The report preserves the original tool-specific MultiQC modules and adds: PTM-Shepherd modification landscape, precursor charge distribution, missed-cleavage distribution, Casanovo confidence, Casanovo/FragPipe sequence overlap, AA_stat annotations, protein-level Jaccard reproducibility, sample QC flags, observations, and a data-provenance/source-report section.
 
-Every integrated metric is mapped to its source program and source file. The source links are relative to the published `results/multiqc/multiqc_report.html`.
+Every integrated metric is mapped to its source program and source file. The report links are generated from the per-tool manifest, so they follow the actual executable-derived output directory names rather than hard-coded folder names.
 
 The machine-readable provenance table is: `pipeline_info/provenance.tsv`.
 

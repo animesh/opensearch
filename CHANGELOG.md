@@ -2,12 +2,13 @@
 
 ### Fixed
 
+- Fixed Casanovo output-root handling: `--output_root` is now the sample name relative to the explicitly supplied output directory, preventing the duplicated `sample.casanovo/sample.casanovo/` log path that caused Casanovo to fail before reading the mzML.
 - Corrected timsTOF `.d` processing to use IM-MS mode, disable unsupported Crystal-C, and enable calibrated mzML generation.
 - Made FragPipe workflow rendering explicit and testable instead of relying on inline `sed` edits.
 - Passed documented FragPipe headless configuration options for tools, DIA-NN and Python.
 - Isolated per-sample FragPipe failures so one failed post-processing run does not cancel the remaining batch; partial MSFragger artifacts are retained.
-- Staged FragPipe mzML/pepXML outputs correctly into Casanovo and AA_stat.
-- Selected Casanovo's `timstof` model automatically for `.d` input and `orbitrap` for regular MS.
+- Pass the FragPipe-generated calibrated mzML to Casanovo and AA_stat by absolute path without Nextflow staging.
+- Run Casanovo without `--model`, using its installed default model for both Orbitrap and timsTOF.
 - Added explicit FragPipe/Casanovo/AA_stat status fields to the integrated summary.
 
 ### Added

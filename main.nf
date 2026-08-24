@@ -34,9 +34,18 @@ workflow NFCORE_OPENSEARCH {
 
     main:
 
-    if (!params.fragpipe_workflow) {
-        error "Please provide --fragpipe_workflow <FragPipe workflow file>, for example \$HOME/fragpipe/workflows/Open.workflow"
-
+    required = [
+        fragpipe_workflow: params.fragpipe_workflow,
+        fragpipe_database: params.fragpipe_database,
+        fragpipe_tools_folder: params.fragpipe_tools_folder,
+        fragpipe_diann: params.fragpipe_diann,
+        fragpipe_bin: params.fragpipe_bin,
+    ]
+    if (params.run_casanovo.toString().toBoolean()) required.casanovo_bin = params.casanovo_bin
+    if (params.run_aa_stat.toString().toBoolean()) required.aa_stat_bin = params.aa_stat_bin
+    missing = required.findAll { key, value -> !value }.keySet()
+    if (missing) {
+        error "Missing required tool configuration: ${missing.join(', ')}"
     }
 
     workflow_ch = Channel.fromPath(params.fragpipe_workflow, checkIfExists: true).first()

@@ -16,11 +16,14 @@ process OPENSEARCH_SUMMARY {
     path 'peptide_comparison_summary.tsv', emit: peptide_comparison_summary, optional: true
 
     script:
+    def fragpipe_dir_name = new File(params.fragpipe_bin.toString()).name
+    def casanovo_dir_name = new File(params.casanovo_bin.toString()).name
+    def aastat_dir_name = new File(params.aa_stat_bin.toString()).name
     """
-    opensearch_summary.py \
-        --dirs ${result_dirs.join(' ')} \
-        --fragpipe_suffix .${params.fragpipe_workdir_suffix} \
-        --casanovo_suffix .${params.casanovo_workdir_suffix} \
-        --aastat_suffix .${params.aastat_workdir_suffix}
+    opensearch_summary.py \\
+        --dirs ${result_dirs.join(' ')} \\
+        --fragpipe_dir_name ${fragpipe_dir_name} \\
+        --casanovo_dir_name ${casanovo_dir_name} \\
+        --aastat_dir_name ${aastat_dir_name}
     """
 }

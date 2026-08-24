@@ -1,4 +1,5 @@
 process MULTIQC {
+    publishDir "${params.outdir}/multiqc", mode: 'copy'
     tag "${meta.id}"
     label 'process_single'
 

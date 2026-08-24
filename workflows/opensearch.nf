@@ -14,30 +14,27 @@ workflow OPENSEARCH {
     workflow_renderer = file("${projectDir}/bin/render_fragpipe_workflow.py", checkIfExists: true)
     multiqc_config_path = file("${projectDir}/assets/multiqc_config.yml", checkIfExists: true)
 
-    // One simple primary task: copy the input, run FragPipe, and expose the
-    // calibrated mzML and pepXML produced in that same task.
     FRAGPIPE(raw_ch, workflow_ch, spectrum_counter, workflow_renderer)
 
-    // Only samples for which a calibrated mzML actually exists enter Casanovo.
-    // Casanovo itself is deliberately called without --model, so its installed
-    // default model is used for both Orbitrap and timsTOF.
+    // FRAGPIPE creates a tiny marker containing the absolute path of the
+    // calibrated mzML beside the copied input in the launch directory.
+    // Downstream tools receive that absolute path as a value, not as a staged
+    // Nextflow file.
+    calibrated = FRAGPIPE.out.mzml_path
+        .map { sample, marker -> tuple(sample, marker.text.trim()) }
+        .filter { sample, mzml -> mzml && new File(mzml).isFile() && new File(mzml).length() > 0 }
+
     if (params.run_casanovo.toString().toBoolean() && params.casanovo_bin) {
-        cas_mzml = FRAGPIPE.out.mzml.filter { it.size() >= 3 && it[2] != null }
-        CASANOVO(cas_mzml.map { sample, model, mzml -> tuple(sample, mzml) })
+        CASANOVO(calibrated)
     }
 
-    // AA_stat needs both the calibrated mzML and pepXML from FragPipe.
     if (params.run_aa_stat.toString().toBoolean() && params.aa_stat_bin) {
-        aa_mzml = FRAGPIPE.out.mzml.filter { it.size() >= 3 && it[2] != null }
-        aa_input = aa_mzml.map { sample, model, mzml -> tuple(sample, mzml) }
+        aa_input = calibrated
             .join(FRAGPIPE.out.pepxml, by: 0)
             .map { sample, mzml, pepxml -> tuple(sample, mzml, pepxml) }
         AA_STAT(aa_input)
     }
 
-    // Summary receives every FragPipe result directory plus successful/failed
-    // optional-tool directories. Missing optional directories therefore appear
-    // explicitly as NOT_RUN in the integrated report.
     summary_dirs = FRAGPIPE.out.fp_dir.map { it[1] }
     if (params.run_casanovo.toString().toBoolean() && params.casanovo_bin) {
         summary_dirs = summary_dirs.mix(CASANOVO.out.casanovo_dir.map { it[1] })
@@ -54,7 +51,6 @@ workflow OPENSEARCH {
         .map { files -> [[id: 'multiqc'], files, multiqc_config_path, [], [], []] }
 
     MULTIQC(multiqc_inputs)
-
 
     emit:
     multiqc_report = MULTIQC.out.report.map { meta, report -> report }

@@ -91,7 +91,7 @@ workflow PIPELINE_INITIALISATION {
             .map { raw_path ->
                 def sample_id = deriveSampleIdFromRaw(raw_path)
                 def input_model = raw_path.getFileName().toString().toLowerCase().endsWith('.d') ? 'timstof' : 'orbitrap'
-                tuple(sample_id, raw_path, input_model)
+                tuple(sample_id, raw_path.toAbsolutePath().toString(), input_model)
             }
             .set { ch_samplesheet }
     } else {
@@ -174,7 +174,7 @@ def validateInputSamplesheetRow(row) {
     }
 
     def input_model = raw_path.getFileName().toString().toLowerCase().endsWith('.d') ? 'timstof' : 'orbitrap'
-    return tuple(sample_id, raw_path, input_model)
+    return tuple(sample_id, raw_path.toAbsolutePath().toString(), input_model)
 }
 
 def deriveSampleIdFromRaw(raw_path) {
