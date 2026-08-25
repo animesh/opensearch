@@ -38,24 +38,24 @@ whereis AA_stat casanovo
 For a local run, use `conf/local.config` a custom configuration and provide fasta-database/tool paths, something like
 
 ```bash
- ./nextflow run . -c conf/local.config --input_dir /mnt/f/tk/MSTK/ --raw_pattern '*TK12_CTR?_*.raw' --fragpipe_workflow fp.dl.workflow.txt --fragpipe_bin /root/fragpipe24v/bin/fragpipe --fragpipe_database /root/fragpipe24v/2024-06-01-decoys-contam-UP000005640.fas --fragpipe_tools_folder /root/fragpipe24v/tools --fragpipe_diann /root/fragpipe24v/tools/diann/1.8.2_beta_8/linux/diann-1.8.1.8 --fragpipe_python /usr/bin/python3 --fragpipe_crystalc false --aa_stat_bin /root/miniforge3/bin/AA_stat --casanovo_bin /root/miniforge3/bin/casanovo --cpus 12 --ram_gb 36 --max_concurrent 1 -resume
+ ./nextflow run . -c conf/local.config --input_dir $HOME --raw_pattern '260518*lank*.d' --fragpipe_workflow fp.dl.workflow.txt  --fragpipe_database "/home/ash022/fragpipe/2024-06-01-decoys-contam-UP000005640.fas" --fragpipe_tools_folder "/home/ash022/fragpipe/tools" --fragpipe_diann "/home/ash022/fragpipe/tools/diann/1.8.2_beta_8/linux/diann-1.8.1.8" --fragpipe_python /usr/bin/python3 --fragpipe_bin "/home/ash022/fragpipe/bin/fragpipe" --fragpipe_crystalc false --aa_stat_bin "/home/ash022/.local/bin/AA_stat" --casanovo_bin "/home/ash022/.local/bin/casanovo" --cpus 20 --ram_gb 40 --max_concurrent 1 -resume
 
  N E X T F L O W   ~  version 26.04.6
 
-Launching `./main.nf` [soggy_sanger] revision: 91d87110a1
+WARN: It appears you have never run this project before -- Option `-resume` is ignored
+Launching `./main.nf` [zen_morse] revision: 91d87110a1
 
-executor >  local (5)
-[9b/99cd48] NFC…PENSEARCH:OPENSEARCH:FRAGPIPE (200313_SIRI_TK12_CTR2_20200323222228) [100%] 3 of 3, cached: 2 ✔
-[85/6ec35a] NFC…PENSEARCH:OPENSEARCH:CASANOVO (200313_SIRI_TK12_CTR2_20200323222228) [100%] 3 of 3, cached: 2 ✔
-[e1/3739f7] NFC…OPENSEARCH:OPENSEARCH:AA_STAT (200313_SIRI_TK12_CTR2_20200323222228) [100%] 3 of 3, cached: 2 ✔
-[ab/dfbfdb] NFCORE_OPENSEARCH:OPENSEARCH:OPENSEARCH_SUMMARY (integrated summary)     [100%] 1 of 1 ✔
-[a3/cdb429] NFCORE_OPENSEARCH:OPENSEARCH:MULTIQC (multiqc)                           [100%] 1 of 1 ✔
+executor >  local (7)
+[93/fb46d5] NFC…518_blank_Slot1-53_1_13745) | 3 of 3 ✔
+[e5/6472f9] NFC…518_blank_Slot1-53_1_13747) | 1 of 1 ✔
+[13/fa3c47] NFC…518_blank_Slot1-53_1_13747) | 1 of 1 ✔
+[63/d8da6e] NFC…UMMARY (integrated summary) | 1 of 1 ✔
+[a8/6bc822] NFC…PENSEARCH:MULTIQC (multiqc) | 1 of 1 ✔
 -[nf-core/opensearch] Pipeline completed successfully-
-Completed at: 24-Aug-2026 14:10:02
-Duration    : 20m 13s
-CPU hours   : 14.0 (71.3% cached)
-Succeeded   : 5
-Cached      : 6
+Completed at: 25-Aug-2026 09:25:10
+Duration    : 12m 35s
+CPU hours   : 4.1
+Succeeded   : 7
 ```
 
 The workflow runs FragPipe first and can then run Casanovo (de novo sequencing) and AA_stat (mass-shift/modification profiling) from the calibrated `mzML` and FragPipe outputs. The final reporting layer combines the three analyses into an integrated OpenSearch summary and also preserves the original tool-specific reports and MultiQC output.
