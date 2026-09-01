@@ -27,35 +27,38 @@ The workflow runs FragPipe first, then optionally runs Casanovo (de novo sequenc
 
 ### Quick start
 
-Install [Java](https://www.oracle.com/java/technologies/downloads/#java21), [Mono](https://www.mono-project.com/download/stable/), [Fragpipe](https://github.com/Nesvilab/FragPipe/releases#release-24.0), [MultiQC](https://docs.seqera.io/multiqc/getting_started/installation) 	
-`pip install multiqc`. The repository includes `fp.dl.workflow.txt` as the canonical Open-search template for timsTOF. `--fragpipe_workflow` may point to another FragPipe workflow. The pipeline renders a per-sample workflow, overriding only environment paths and input-type-dependent settings. Install the optional tools because they provide complementary evidence from the FragPipe-generated `_calibrated.mzML` output produced by FragPipe:
+Download test data like [timsTOF 3 DDA directories in a tar](https://zenodo.org/records/22233873) and install [Java](https://www.oracle.com/java/technologies/downloads/#java21), [Mono](https://www.mono-project.com/download/stable/), [Fragpipe](https://github.com/Nesvilab/FragPipe/releases#release-24.0), [MultiQC](https://docs.seqera.io/multiqc/getting_started/installation) 	
+`pip install multiqc`. The repository includes `fp.dl.workflow.txt` as the canonical Open-search template for timsTOF. `--fragpipe_workflow` may point to another FragPipe workflow. The pipeline renders a per-sample workflow, overriding only environment paths and input-type-dependent settings. Also install the optional tools because they provide complementary evidence from the FragPipe-generated `_calibrated.mzML` output produced by FragPipe:
 
 ```bash
 pip install AA_stat casanovo
 whereis AA_stat casanovo
+find . -name localization.py
 ```
 
-For a local run, use `conf/local.config` a custom configuration and provide fasta-database/tool paths, something like
+Patch [`localization.py`](https://github.com/SimpleNumber/aa_stat/compare/master...animesh:aa_stat:master) for timsTOF data and then for a local run, use `conf/local.config` a custom configuration and provide fasta-database/tool paths, something like
 
 ```bash
- ./nextflow run . -c conf/local.config --input_dir $HOME --raw_pattern '260518*lank*.d' --fragpipe_workflow fp.dl.workflow.txt  --fragpipe_database "/home/ash022/fragpipe/2024-06-01-decoys-contam-UP000005640.fas" --fragpipe_tools_folder "/home/ash022/fragpipe/tools" --fragpipe_diann "/home/ash022/fragpipe/tools/diann/1.8.2_beta_8/linux/diann-1.8.1.8" --fragpipe_python /usr/bin/python3 --fragpipe_bin "/home/ash022/fragpipe/bin/fragpipe" --fragpipe_crystalc false --aa_stat_bin "/home/ash022/.local/bin/AA_stat" --casanovo_bin "/home/ash022/.local/bin/casanovo" --cpus 20 --ram_gb 40 --max_concurrent 1 -resume
+wget https://zenodo.org/records/22233873/files/test.d.tar
+tar xvf test.d.tar
+./nextflow run . -c conf/local.config --input_dir $PWD --raw_pattern '260513_blank*.d' --fragpipe_workflow fp.dl.workflow.txt --fragpipe_bin /root/fragpipe24v/bin/fragpipe --fragpipe_database /root/fragpipe24v/2024-06-01-decoys-contam-UP000005640.fas --fragpipe_tools_folder /root/fragpipe24v/tools --fragpipe_diann /root/fragpipe24v/tools/diann/1.8.2_beta_8/linux/diann-1.8.1.8 --fragpipe_python /usr/bin/python3 --fragpipe_crystalc false --aa_stat_bin /root/miniforge3/bin/AA_stat --casanovo_bin /root/miniforge3/bin/casanovo --cpus 12 --ram_gb 36 --max_concurrent 1 -resume
 
  N E X T F L O W   ~  version 26.04.6
 
 WARN: It appears you have never run this project before -- Option `-resume` is ignored
-Launching `./main.nf` [zen_morse] revision: 91d87110a1
+Launching `./main.nf` [confident_kimura] revision: 91d87110a1
 
-executor >  local (7)
-[93/fb46d5] NFC…518_blank_Slot1-53_1_13745) | 3 of 3 ✔
-[e5/6472f9] NFC…518_blank_Slot1-53_1_13747) | 1 of 1 ✔
-[13/fa3c47] NFC…518_blank_Slot1-53_1_13747) | 1 of 1 ✔
-[63/d8da6e] NFC…UMMARY (integrated summary) | 1 of 1 ✔
-[a8/6bc822] NFC…PENSEARCH:MULTIQC (multiqc) | 1 of 1 ✔
+executor >  local (11)
+[55/0d70ec] NFCORE_OPENSEARCH:OPENSEARCH:FRAGPIPE (260513_blank_Slot1-53_1_13993) [100%] 3 of 3 ✔
+[75/f9a7ce] NFCORE_OPENSEARCH:OPENSEARCH:CASANOVO (260513_blank_Slot1-53_1_13993) [100%] 3 of 3 ✔
+[47/e23567] NFCORE_OPENSEARCH:OPENSEARCH:AA_STAT (260513_blank_Slot1-53_1_13993)  [100%] 3 of 3 ✔
+[86/9b3478] NFCORE_OPENSEARCH:OPENSEARCH:OPENSEARCH_SUMMARY (integrated summary)  [100%] 1 of 1 ✔
+[c5/11a4a8] NFCORE_OPENSEARCH:OPENSEARCH:MULTIQC (multiqc)                        [100%] 1 of 1 ✔
 -[nf-core/opensearch] Pipeline completed successfully-
-Completed at: 25-Aug-2026 09:25:10
-Duration    : 12m 35s
-CPU hours   : 4.1
-Succeeded   : 7
+Completed at: 01-Sep-2026 20:48:27
+Duration    : 57m 16s
+CPU hours   : 11.4
+Succeeded   : 11
 ```
 
 The workflow runs FragPipe first and can then run Casanovo (de novo sequencing) and AA_stat (mass-shift/modification profiling) from the calibrated `mzML` and FragPipe outputs. The final reporting layer combines the three analyses into an integrated OpenSearch summary and also preserves the original tool-specific reports and MultiQC output.
@@ -94,9 +97,6 @@ The integrated report treats the three tools as complementary views of the same 
 - **OpenSearch Summary:** what do these analyses collectively say about the dataset?
 
 NOTE: Casanovo needs GPU to be efficient, but it doesnt have to be the latest and greatest, RTX2070 via WSL is enough
-
-![RTX2070 on WSL](<images/Screenshot 2026-08-15 153254.png>)
-
 
 Default workflow steps:
 

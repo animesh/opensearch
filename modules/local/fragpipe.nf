@@ -74,7 +74,7 @@ process FRAGPIPE {
             --config-python "${params.fragpipe_python}" || FP_RC=\$?
     fi
 
-    OUTPUT_NAME=\$(cut -f2 "\$GENERATED_MANIFEST")
+    OUTPUT_NAME=\$(cut -f2 "\$GENERATED_MANIFEST" | tr '-' '_' )
     FP_RESULTS="\$FPDIR/\$OUTPUT_NAME"
     CALIBRATED="${launch_dir}/\${RAW_STEM}_calibrated.mzML"
     printf '%s\\n' "\$CALIBRATED" > "${sample_id}_calibrated.path"

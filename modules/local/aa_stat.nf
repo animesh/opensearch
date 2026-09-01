@@ -56,9 +56,9 @@ process AA_STAT {
     AA_STAT_VERSION=\$("${params.aa_stat_bin}" --version 2>&1 | grep -oP '[0-9]+\\.[0-9]+\\.[0-9]+' | head -1 || true)
     AA_STAT_VERSION=\${AA_STAT_VERSION:-unknown}
     cat > versions.yml <<END_VERSIONS
-    "${task.process}":
-        ${params.aa_stat_bin.toString().tokenize('/')[-1]}: \$AA_STAT_VERSION
-    END_VERSIONS
+"${task.process}":
+    ${params.aa_stat_bin.toString().tokenize('/')[-1]}: \$AA_STAT_VERSION
+END_VERSIONS
 
     exit 0
     """
