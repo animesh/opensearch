@@ -27,16 +27,55 @@ The workflow runs FragPipe first, then optionally runs Casanovo (de novo sequenc
 
 ### Quick start
 
-Download test data like [timsTOF 3 DDA directories in a tar](https://zenodo.org/records/22233873) and install [Java](https://www.oracle.com/java/technologies/downloads/#java21), [Mono](https://www.mono-project.com/download/stable/), [Fragpipe](https://github.com/Nesvilab/FragPipe/releases#release-24.0), [MultiQC](https://docs.seqera.io/multiqc/getting_started/installation) 	
+#### orbitrap
+
+Download test data like [orbitrap 3 DDA raw files in a tar](https://zenodo.org/records/22287422) and install [Java](https://www.oracle.com/java/technologies/downloads/#java21), [Mono](https://www.mono-project.com/download/stable/), [Fragpipe](https://github.com/Nesvilab/FragPipe/releases#release-24.0), [MultiQC](https://docs.seqera.io/multiqc/getting_started/installation) 	
 `pip install multiqc`. The repository includes `fp.dl.workflow.txt` as the canonical Open-search template for timsTOF. `--fragpipe_workflow` may point to another FragPipe workflow. The pipeline renders a per-sample workflow, overriding only environment paths and input-type-dependent settings. Also install the optional tools because they provide complementary evidence from the FragPipe-generated `_calibrated.mzML` output produced by FragPipe:
 
 ```bash
 pip install AA_stat casanovo
 whereis AA_stat casanovo
-find . -name localization.py
 ```
 
-Patch [`localization.py`](https://github.com/SimpleNumber/aa_stat/compare/master...animesh:aa_stat:master) for timsTOF data and then for a local run, use `conf/local.config` a custom configuration and provide fasta-database/tool paths, something like
+Patch [`localization.py`](https://github.com/SimpleNumber/aa_stat/compare/master...animesh:aa_stat:master) 
+
+```bash
+curl -sSL "https://raw.githubusercontent.com/animesh/aa_stat/refs/heads/master/AA_stat/localization.py" -o $(python3 -c "import os, AA_stat; print(os.path.join(os.path.dirname(AA_stat.__file__), 'localization.py'))")
+python3 -c 'import os, AA_stat; path=os.path.join(os.path.dirname(AA_stat.__file__), "localization.py"); print("Patch is present" if "reader[scan_num]" in open(path).read() else "Patch is missing")'
+python3 -c "import AA_stat.localization; print('Import successful')"
+```
+
+and then finally for a local run, use `conf/local.config` a custom configuration and provide fasta-database/tool paths, something like
+
+```bash
+wget  https://zenodo.org/records/22287422/files/test.BSA.raw.tar
+tar xvf test.BSA.raw.tar 
+./nextflow run . -c conf/local.config --input_dir $PWD --raw_pattern '*BSA*.raw' --fragpipe_workflow fp.dl.workflow.txt --fragpipe_bin /root/fragpipe24v/bin/fragpipe --frag
+pipe_database /root/fragpipe24v/2024-06-01-decoys-contam-UP000005640.fas --fragpipe_tools_folder /root/fragpipe24v/tools --fragpipe_diann /root/fragpipe24v/tools/diann/1.8.2_be
+ta_8/linux/diann-1.8.1.8 --fragpipe_python /usr/bin/python3 --aa_stat_bin /root/miniforge3/bin/AA_stat --casanovo_bin /root/miniforge3/bin/casanovo --cpus 12 --ram_gb 36 --max_
+concurrent 1 -resume
+
+ N E X T F L O W   ~  version 26.04.6
+
+WARN: It appears you have never run this project before -- Option `-resume` is ignored
+Launching `./main.nf` [elated_gautier] revision: 91d87110a1
+
+executor >  local (11)
+[13/f914fe] NFCORE_OPENSEARCH:OPENSEARCH:FRAGPIPE (20250612_BSA_500fmol_01)      [100%] 3 of 3 ✔
+[fb/a609f4] NFCORE_OPENSEARCH:OPENSEARCH:CASANOVO (20250612_BSA_500fmol_01)      [100%] 3 of 3 ✔
+[9e/b10ce9] NFCORE_OPENSEARCH:OPENSEARCH:AA_STAT (20250612_BSA_500fmol_01)       [100%] 3 of 3 ✔
+[d6/8db93f] NFCORE_OPENSEARCH:OPENSEARCH:OPENSEARCH_SUMMARY (integrated summary) [100%] 1 of 1 ✔
+[fb/119678] NFCORE_OPENSEARCH:OPENSEARCH:MULTIQC (multiqc)                       [100%] 1 of 1 ✔
+-[nf-core/opensearch] Pipeline completed successfully-
+Completed at: 03-Sep-2026 23:37:53
+Duration    : 31m 17s
+CPU hours   : 6.2
+Succeeded   : 11
+```
+
+#### timsTOF
+
+Download test data like [timsTOF 3 DDA directories in a tar](https://zenodo.org/records/22233873) 
 
 ```bash
 wget https://zenodo.org/records/22233873/files/test.d.tar
